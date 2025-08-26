@@ -193,8 +193,6 @@ const MARTIAL_KO: Record<(typeof MARTIAL)[number], string> = {
 const ALL_WEAPONS_EN = [...SIMPLE, ...MARTIAL] as const;
 const WEAPON_KO: Record<(typeof ALL_WEAPONS_EN)[number], string> = { ...SIMPLE_KO, ...MARTIAL_KO };
 const SHIELD_KO = "방패";
-const SHIELD_EN = "Shield";
-
 // 종족/클래스 숙련(간단화) — 한국어 명칭 기준
 const RACE_WEAP_KO: Record<string,string[]> = {
   "인간": ["언월도","미늘창","장창","창"],
