@@ -387,21 +387,19 @@ export default function App(){
 
   return (
     <div style={{ minHeight:'100vh', display:'flex', justifyContent:'center', alignItems:'flex-start', background:'#fff' }}>
-      <div style={{ width:'min(1100px, 96%)', margin:'24px auto', fontFamily:'ui-sans-serif, system-ui' }}>
-        <header style={{ textAlign:'center', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ width:120 }} />
-          <div>
-            <h1 style={{ fontSize:28, fontWeight:800, margin:0 }}>{T.title}</h1>
-            <p style={{ color:'#6b7280', margin:'6px 0 0' }}>{T.sub}</p>
-          </div>
-          <div style={{ width:120, textAlign:'right' }}>
-            <button onClick={()=>setLang(lang==='ko'?'en':'ko')} style={btnSecondary}>{T.langBtn}</button>
-          </div>
-        </header>
+<div style={{ width:'100%', maxWidth: 820, margin:'24px auto', fontFamily:'ui-sans-serif, system-ui' }}>
+        <header style={{ textAlign:'center', marginBottom:16 }}>
+  <h1 style={{ fontSize:28, fontWeight:800, margin:0 }}>{T.title}</h1>
+  <p style={{ color:'#6b7280', margin:'6px 0 0' }}>{T.sub}</p>
+  <div style={{ marginTop:8 }}>
+    <button onClick={()=>setLang(lang==='ko'?'en':'ko')} style={btnSecondary}>{T.langBtn}</button>
+  </div>
+</header>
+
 
         {/* 결과 */}
-        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap:16 }}>
-          <div style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16 }}>
+        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap:16, maxWidth: 760, margin: '0 auto' }}>
+  <div style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16 }}>
             <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.result}</h2>
 
             <div style={{ display:'grid', gridTemplateColumns:'120px 1fr', rowGap:8 }}>
@@ -453,7 +451,7 @@ export default function App(){
         </section>
 
         {/* 재주 */}
-        <section style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16 }}>
+style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, marginLeft:'auto', marginRight:'auto' }}
           <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.featSection}</h2>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
             <button onClick={rollFeat} style={btn}>{T.rollFeat}</button>
@@ -462,7 +460,7 @@ export default function App(){
         </section>
 
         {/* 주사위 */}
-        <section style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16 }}>
+style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, marginLeft:'auto', marginRight:'auto' }}
           <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.diceTitle}</h2>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
             <input value={diceExpr} onChange={e=>setDiceExpr(e.target.value)} placeholder={T.dicePH} style={input}/>
@@ -472,7 +470,7 @@ export default function App(){
         </section>
 
         {/* 승자 정하기 */}
-        <section style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, marginBottom:24 }}>
+style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, marginLeft:'auto', marginRight:'auto' }}
           <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.vsTitle}</h2>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
             <input value={names} onChange={e=>setNames(e.target.value)} placeholder={T.vsPH} style={input}/>
