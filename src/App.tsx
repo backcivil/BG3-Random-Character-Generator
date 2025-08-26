@@ -1,6 +1,4 @@
-from pathlib import Path
-
-code = r'''import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 /** BG3 랜덤 생성기 · 요구사항 반영 풀버전
  * - 새로고침/첫 진입 시 무기·기술 자동 랜덤(공란 방지)
@@ -501,8 +499,3 @@ const btnPrimary: React.CSSProperties = { ...btnBase, background:"#111827", colo
 const btnSecondary: React.CSSProperties = { ...btnBase, background:"#f3f4f6" };
 const input: React.CSSProperties = { padding:"10px 12px", border:"1px solid #e5e7eb", borderRadius:10, minWidth:260 };
 const badge: React.CSSProperties = { display:'inline-block', padding:'0 6px', fontSize:12, borderRadius:999, background:'#111827', color:'#fff', lineHeight:'18px', height:18, margin:'0 2px' };
-'''
-
-path = Path("/mnt/data/App_full.tsx")
-path.write_text(code, encoding="utf-8")
-path
