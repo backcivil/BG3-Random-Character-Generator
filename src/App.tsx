@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 /** BG3 랜덤 생성기 · 최신 수정본
  * - 새로고침 시 무기/기술도 자동 랜덤
