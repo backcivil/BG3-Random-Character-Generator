@@ -398,7 +398,7 @@ export default function App(){
 
 
         {/* 결과 */}
-        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap:16, maxWidth: 760, margin: '0 auto' }}>
+<section style={{ display:'grid', gridTemplateColumns:'1fr', gap:16, maxWidth:760, margin:'0 auto' }}>
   <div style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16 }}>
             <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.result}</h2>
 
@@ -451,7 +451,7 @@ export default function App(){
         </section>
 
         {/* 재주 */}
-style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, marginLeft:'auto', marginRight:'auto' }}
+<section style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, margin:'16px auto 0' }}>
           <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.featSection}</h2>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
             <button onClick={rollFeat} style={btn}>{T.rollFeat}</button>
@@ -460,7 +460,7 @@ style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, 
         </section>
 
         {/* 주사위 */}
-style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, marginLeft:'auto', marginRight:'auto' }}
+<section style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, margin:'16px auto 0' }}>
           <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.diceTitle}</h2>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
             <input value={diceExpr} onChange={e=>setDiceExpr(e.target.value)} placeholder={T.dicePH} style={input}/>
@@ -470,7 +470,7 @@ style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, 
         </section>
 
         {/* 승자 정하기 */}
-style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, maxWidth:760, marginLeft:'auto', marginRight:'auto' }}
+<section style={{ border:'1px solid #e5e7eb', borderRadius:12, padding:16, marginTop:16, marginBottom:24, maxWidth:760, margin:'16px auto 24px' }}>
           <h2 style={{ fontSize:20, fontWeight:700, margin:'0 0 12px' }}>{T.vsTitle}</h2>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
             <input value={names} onChange={e=>setNames(e.target.value)} placeholder={T.vsPH} style={input}/>
