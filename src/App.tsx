@@ -11,8 +11,15 @@ import React, { useEffect, useState } from "react";
  */
 
 const rand = (n: number) => Math.floor(Math.random() * n);
-const choice = <T,>(arr: T[]): T => arr[rand(arr.length)];
-const shuffle = <T,>(arr: T[]) => {
+const choice = <T,>(arr: readonly T[]): T => arr[rand(arr.length)];
+const shuffle = <T,>(arr: readonly T[]) => {
+  const a = [...arr]; // readonly 받아도 복사해서 사용
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -267,7 +274,14 @@ export default function App(){
   const [subraceKo, setSubraceKo] = useState<string>("-");
   const [classKey, setClassKey] = useState<keyof typeof CLASSES | "-">("-");
   const [subclassKo, setSubclassKo] = useState<string>("-");
-  const [bg, setBg] = useState<typeof BACK_KO[number] | "-">("-");
+  const [bg, setBg] = useState<Background>("-");
+
+// rollBackground 그대로 OK (choice 가 readonly 허용하므로)
+function rollBackground(){ setBg(choice(BACK_KO)); }
+
+// BG_SKILLS 타입도 Background에서 "-" 제외하도록 더 안전하게 하고 싶다면(선택)
+const BG_SKILLS: Record<Exclude<Background, "-">,
+  [keyof typeof SK.KO, keyof typeof SK.KO]
   const [stats, setStats] = useState<PBMap>({STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8});
   const [pbBonus2, setPbBonus2] = useState<Abil | null>(null);
   const [pbBonus1, setPbBonus1] = useState<Abil | null>(null);
