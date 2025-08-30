@@ -414,7 +414,6 @@ function rollNdM(n: number, m: number) {
 // -------- App --------
 export default function App() {
   const [lang, setLang] = useState<Lang>("ko");
-  const [showResult, setShowResult] = useState<boolean>(false); // 초기 숨김
 
   const [raceKey, setRaceKey] = useState<keyof typeof RACES | "-">("-");
   const [subraceKo, setSubraceKo] = useState<string>("-");
@@ -563,17 +562,66 @@ export default function App() {
     ];
     setFeat(choice(feats));
   }
+function computeWeapons(raceKo: string, classKo: string): string[] {
+  const racePool = RACE_WEAP_KO[raceKo] || [];
+  const classPool = CLASS_WEAP_KO[classKo] || [];
+  let pool = Array.from(new Set([...racePool, ...classPool]));
+
+  const hasShield = (raceKo && RACE_SHIELD.has(raceKo)) || (classKo && CLASS_SHIELD.has(classKo));
+  if (hasShield && !pool.includes(SHIELD_KO)) pool.push(SHIELD_KO);
+
+  if (pool.length === 0) {
+    const picks = shuffle(ALL_WEAPONS_EN).slice(0, 2);
+    return picks.map((w) => WEAPON_KO[w]);
+  }
+  const pickN = pool.length <= 8 ? 1 : 2;
+  return shuffle(pool).slice(0, Math.min(pickN, pool.length));
+}
+
+function computeClassSkills(classKo: string, bgSel: Background): (keyof typeof SK.KO)[] {
+  if (bgSel === "-") return [];
+  const cfg = CLASS_SK_CHOICE[classKo];
+  if (!cfg) return [];
+  const [bg1, bg2] = BG_SKILLS[bgSel];
+  const pool = cfg.list.filter((s) => s !== bg1 && s !== bg2);
+  return shuffle(pool).slice(0, cfg.n);
+}
 
   function rollAll() {
-    rollRace();
-    rollClass();
-    rollBackground();
-    rollStats();
-    setTimeout(() => {
-      rollWeapons();
-      rollSkills();
-    }, 0);
-  }
+  // 종족
+  const rKeys = Object.keys(RACES) as (keyof typeof RACES)[];
+  const r = choice(rKeys);
+  const raceKo = RACES[r].ko;
+  const subrace = RACES[r].subs ? choice(RACES[r].subs!) : "-";
+
+  // 클래스
+  const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+  const k = choice(cKeys);
+  const classKo = CLASSES[k].ko;
+  const subclass = choice(CLASSES[k].subclasses);
+
+  // 출신
+  const bgPick: Background = choice(BACK_KO);
+
+  // 능력치
+  const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
+
+  // 무기/기술 — 확정된 값으로 즉시 계산
+  const weapons = computeWeapons(raceKo, classKo);
+  const skillsPicked = computeClassSkills(classKo, bgPick);
+
+  // 한 번에 상태 반영
+  setRaceKey(r);
+  setSubraceKo(subrace);
+  setClassKey(k);
+  setSubclassKo(subclass);
+  setBg(bgPick);
+  setPbBonus2(bonus2);
+  setPbBonus1(bonus1);
+  setStats(final);
+  setWeaponsKO(weapons);
+  setSkills(skillsPicked);
+}
 
   // Dice Roller
   function handleRollDice() {
@@ -605,7 +653,8 @@ export default function App() {
   // 라벨 헬퍼
   const T = L[lang];
   const abilLabel = (k: Abil) => (lang === "ko" ? abilKo[k] : (k as string));
-  const bgLabel = (b: Background) => (b === "-" ? "-" : lang === "ko" ? b : BACK_EN[b]);
+  const bgLabel = (b: Background) => (b === "-" ? "" : (lang === "ko" ? b : BACK_EN[b]));
+
 
   const weaponsOut = (() => {
   if (lang === "ko") return weaponsKO;
@@ -615,12 +664,9 @@ export default function App() {
 })();
 
 
-  const raceOut = raceKey === "-" ? "-" : lang === "ko" ? RACES[raceKey].ko : String(raceKey);
-  const classOut = classKey === "-" ? "-" : lang === "ko" ? CLASSES[classKey].ko : String(classKey);
+  const raceOut  = raceKey  === "-" ? "" : (lang === "ko" ? RACES[raceKey].ko  : String(raceKey));
+const classOut = classKey === "-" ? "" : (lang === "ko" ? CLASSES[classKey].ko : String(classKey));
   const skillsOut = skills.map((s) => (lang === "ko" ? SK.KO[s] : SK.EN[s]));
-
-  // 버튼 공통: 결과 표시 상태로 전환
-  const reveal = () => setShowResult(true);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "flex-start", background: "#fff" }}>
@@ -644,7 +690,6 @@ export default function App() {
         </header>
 
         {/* 결과 (초기에는 숨김) */}
-        {showResult && (
           <section style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 12px" }}>{T.result}</h2>
@@ -665,10 +710,10 @@ export default function App() {
                 <div>{bgLabel(bg)}</div>
 
                 <div style={{ color: "#6b7280" }}>{T.weapons}</div>
-                <div>{weaponsOut.length ? weaponsOut.join(", ") : "-"}</div>
+<div>{weaponsOut.join(", ")}</div>
 
                 <div style={{ color: "#6b7280" }}>{T.skills}</div>
-                <div>{skillsOut.length ? skillsOut.join(", ") : "-"}</div>
+<div>{skillsOut.join(", ")}</div>
               </div>
 
               {/* 능력치 */}
@@ -693,7 +738,6 @@ export default function App() {
                 <button
                   onClick={() => {
                     rollAll();
-                    reveal();
                   }}
                   style={btnPrimary}
                 >
@@ -703,7 +747,6 @@ export default function App() {
                   onClick={() => {
                     rollRace();
                     setTimeout(rollWeapons, 0);
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -716,7 +759,6 @@ export default function App() {
                       rollWeapons();
                       rollSkills();
                     }, 0);
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -726,7 +768,6 @@ export default function App() {
                   onClick={() => {
                     rollBackground();
                     setTimeout(rollSkills, 0);
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -735,7 +776,6 @@ export default function App() {
                 <button
                   onClick={() => {
                     rollStats();
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -744,7 +784,6 @@ export default function App() {
                 <button
                   onClick={() => {
                     rollWeapons();
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -753,7 +792,6 @@ export default function App() {
                 <button
                   onClick={() => {
                     rollAny2Weapons();
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -762,7 +800,6 @@ export default function App() {
                 <button
                   onClick={() => {
                     rollSkills();
-                    reveal();
                   }}
                   style={btn}
                 >
@@ -771,7 +808,6 @@ export default function App() {
               </div>
             </div>
           </section>
-        )}
 
         {/* 재주 */}
         <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginTop: 16 }}>
@@ -780,7 +816,6 @@ export default function App() {
             <button
               onClick={() => {
                 rollFeat();
-                reveal();
               }}
               style={btn}
             >
