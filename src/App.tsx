@@ -608,12 +608,12 @@ export default function App() {
   const bgLabel = (b: Background) => (b === "-" ? "-" : lang === "ko" ? b : BACK_EN[b]);
 
   const weaponsOut = (() => {
-    if (lang === "ko") return weaponsKO;
-    // EN 모드: 역매핑
-    const mapEN: Record<string, string> = {};
-    for (const en of ALL_WEAPONS_EN) mapEN[WEAPON_KO[en]] = en;
-    return weaponsKO.map((w) => mapEN[w] || w);
-  })();
+  if (lang === "ko") return weaponsKO;
+  const mapEN: Record<string, string> = {};
+  for (const en of ALL_WEAPONS_EN) mapEN[WEAPON_KO[en]] = en;
+  return weaponsKO.map((w) => (w === SHIELD_KO ? SHIELD_EN : (mapEN[w] ?? w)));
+})();
+
 
   const raceOut = raceKey === "-" ? "-" : lang === "ko" ? RACES[raceKey].ko : String(raceKey);
   const classOut = classKey === "-" ? "-" : lang === "ko" ? CLASSES[classKey].ko : String(classKey);
