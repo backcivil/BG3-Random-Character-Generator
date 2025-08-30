@@ -1,18 +1,9 @@
 // src/App.tsx
 import { useState } from "react";
-import {
-  ABILS, abilKo, CLASSES, RACES,
-  BACK_KO, BACK_EN, SK, BG_SKILLS, CLASS_SK_CHOICE,
-  ALL_WEAPONS_EN, WEAPON_KO,
-  SHIELD_KO,
-  RACE_WEAP_KO, RACE_SHIELD,
-  CLASS_WEAP_KO, CLASS_SHIELD,
-} from "./lib/data";
-import {
-  rand, choice, shuffle,
-  parseDice, rollNdM,
-  rollPointBuyWithBonuses,
-} from "./lib/utils";
+
+// ✅ 추가/교체
+import { ABILS, type Abil } from "./lib/types";
+
 
 /** BG3 랜덤 생성기 · lib 분리판
  * - 초기엔 빈 화면(자동 생성 안 함)
@@ -322,7 +313,7 @@ export default function App() {
             <div style={{ marginTop: 12 }}>
               <h3 style={{ fontWeight: 700, margin: "0 0 6px" }}>{T.abilities}</h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, textAlign: "center" }}>
-                {ABILS.map((k) => (
+{ABILS.map((k: Abil)=> (
                   <div key={k} style={{ border: "1px solid #f1f5f9", borderRadius: 10, padding: "8px 6px" }}>
                     <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>{abilLabel(k)}</div>
                     <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1 }}>{stats[k]}</div>
