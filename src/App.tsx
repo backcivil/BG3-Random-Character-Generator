@@ -478,11 +478,11 @@ const GROWTH_DB: Record<
     },
   },
   Wizard: {
-    open: (_lv, sub) => {
-      const o: Partial<Record<GrowthKey, string[]>> = {};
-      // 칼날 노래: 무기 숙련은 computeWeapons 에서 처리
-      return o;
-    },
+open: (_lv, _sub) => {
+  const o: Partial<Record<GrowthKey, string[]>> = {};
+  return o;
+},
+
     maxSpellLevel: (lvl) => Math.min(6, Math.floor((lvl + 1) / 2)),
     spells: {
       0: ["마법사의 손", "하급 환영", "폭발하는 힘", "망자의 종소리", "폭음의 검"],
