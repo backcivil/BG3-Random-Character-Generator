@@ -337,16 +337,7 @@ function parseDice(expr: string): { n:number; m:number; mod:number } | null {
   return { n, m:sides, mod };
 }
 
-/** ========= 주문 테이블(요약 + Patch8 추가) ========= */
-// 공통: Patch8 소마법/주문
-const CANTRIP_PATCH8 = {
-  "폭음의 검": true,   // Booming Blade
-  "폭발하는 힘": true, // likely "Force Explosion" (가칭)
-  "망자의 종소리": true, // Toll the Dead
-};
-const LV2_PATCH8 = {
-  "그림자 검": true, // Shadow Blade (2레벨)
-};
+
 
 type GrowthKey = "전투 방식" | "전투 기법" | "바드 통달" | "마법 비밀" | "바드 스타일" | "야수의 심장" | "야수의 상" | "워락 영창" | "소서러 변형" | "주문" | "비전 사격" | "하이엘프 소마법" | "확장 주문(위저드)";
 type SpellDB = { maxSpellLevel?: (lvl:number)=>number; spells?: Record<number, string[]>; open: (level:number, subclass?:string)=>Partial<Record<GrowthKey, string[]>>; };
