@@ -348,7 +348,20 @@ const LV2_PATCH8 = {
   "그림자 검": true, // Shadow Blade (2레벨)
 };
 
-type GrowthKey = "전투
+type GrowthKey =
+  | "전투 방식"
+  | "전투 기법"
+  | "바드 통달"
+  | "마법 비밀"
+  | "바드 스타일"
+  | "야수의 심장"
+  | "야수의 상"
+  | "워락 영창"
+  | "소서러 변형"
+  | "주문"
+  | "비전 사격"
+  | "하이엘프 소마법"
+  | "확장 주문(위저드)";
 export default function App() {
   const [lang, setLang] = useState<Lang>("ko");
 
@@ -476,11 +489,27 @@ export default function App() {
     setSkills(picks);
   }
   function rollAll() {
-    if (!lockRace) { const rKeys = Object.keys(RACES) as (keyof typeof RACES)[]; const r = choice(rKeys); setRaceKey(r); setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-"); }
-    if (!lockClass) { const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[]; const k = choice(cKeys); setClassKey(k); setSubclassKo(choice(CLASSES[k].subclasses)); }
-    if (!lockBG) setBg(choice(BACK_KO));
-    rollStats();
-    setTimeout(()=>{
+  if (!lockRace) {
+    const rKeys = Object.keys(RACES) as (keyof typeof RACES)[];
+    const r = choice(rKeys);
+    setRaceKey(r);
+    setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-");
+  }
+  if (!lockClass) {
+    const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+    const k = choice(cKeys);
+    setClassKey(k);
+    setSubclassKo(choice(CLASSES[k].subclasses));
+  }
+  if (!lockBG) setBg(choice(BACK_KO));
+  rollStats();
+
+  setTimeout(() => {
+    if (!lockWeapons) rollWeapons();
+    if (!lockSkills) rollSkills();
+  }, 0);
+}
+
   return (
     <div style={{ minHeight:"100vh", display:"flex", justifyContent:"center", alignItems:"flex-start", background:"#fff" }}>
       <div style={{ width:"min(1200px, 96%)", margin:"24px auto", fontFamily:"ui-sans-serif, system-ui" }}>
