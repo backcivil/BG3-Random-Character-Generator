@@ -348,20 +348,167 @@ const LV2_PATCH8 = {
   "그림자 검": true, // Shadow Blade (2레벨)
 };
 
-type GrowthKey =
-  | "전투 방식"
-  | "전투 기법"
-  | "바드 통달"
-  | "마법 비밀"
-  | "바드 스타일"
-  | "야수의 심장"
-  | "야수의 상"
-  | "워락 영창"
-  | "소서러 변형"
-  | "주문"
-  | "비전 사격"
-  | "하이엘프 소마법"
-  | "확장 주문(위저드)";
+type GrowthKey = "전투 방식" | "전투 기법" | "바드 통달" | "마법 비밀" | "바드 스타일" | "야수의 심장" | "야수의 상" | "워락 영창" | "소서러 변형" | "주문" | "비전 사격" | "하이엘프 소마법" | "확장 주문(위저드)";
+type SpellDB = { maxSpellLevel?: (lvl:number)=>number; spells?: Record<number, string[]>; open: (level:number, subclass?:string)=>Partial<Record<GrowthKey, string[]>>; };
+
+const BM_MANEUVERS = ["사령관의 일격","무장 해제 공격","교란의 일격","날렵한 발놀림","속임수 공격","도발 공격","전투 기법 공격","위협 공격","정밀 공격","밀치기 공격","고양","응수","휩쓸기","다리 걸기 공격"];
+
+const ELDRITCH_SHOTS = [
+  "비전 사격: 추방 화살","비전 사격: 현혹 화살","비전 사격: 폭발 화살","비전 사격: 약화 화살",
+  "비전 사격: 속박 화살","비전 사격: 추적 화살","비전 사격: 그림자 화살","비전 사격: 관통 화살"
+];
+
+const GROWTH_DB: Record<string, SpellDB> = {
+  Fighter: {
+    open: (lv, sub) => {
+      const style = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"];
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(lv===1) o["전투 방식"]=style;
+      if(sub==="전투의 대가"){
+        if(lv===3) o["전투 기법"]=BM_MANEUVERS;
+        if(lv===7) o["전투 기법"]=BM_MANEUVERS;
+        if(lv===10) o["전투 기법"]=BM_MANEUVERS;
+      }
+      if(sub==="투사" && lv===10) o["전투 방식"]=style;
+      if(sub==="비전 궁수"){
+        if(lv===3) { o["주문"]= ["인도","빛","진실의 일격"]; o["비전 사격"]=ELDRITCH_SHOTS; }
+        if(lv===7) o["비전 사격"]=ELDRITCH_SHOTS;
+        if(lv===10) o["비전 사격"]=ELDRITCH_SHOTS;
+      }
+      if(sub==="비술 기사"){
+        if(lv===3) o["확장 주문(위저드)"]=["(1레벨 위저드 주문 택1)"];
+        if(lv===8) o["확장 주문(위저드)"]=["(2레벨 위저드 주문 택1)"];
+      }
+      return o;
+    },
+    maxSpellLevel: (lvl)=> Math.min(3, Math.floor((lvl+1)/4)), // EK 주문 대략
+    spells: {
+      0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격","폭음의 검"],
+      1: ["불타는 손길","오색 보주","마력탄","마법사의 갑옷","선악 보호","방어막","천둥파","마녀의 화살"],
+      2: ["멜프의 산성 화살","비전 자물쇠","어둠","돌풍","작열 광선","파쇄","그림자 검"],
+    }
+  },
+  Rogue: {
+    open: (lv, sub) => {
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(sub==="비전 괴도"){
+        if(lv===3) o["확장 주문(위저드)"]=["(1레벨 위저드 주문 택1)"];
+        if(lv===8) o["확장 주문(위저드)"]=["(2레벨 위저드 주문 택1)"];
+      }
+      return o;
+    },
+    maxSpellLevel: (lvl)=> (lvl>=7?2: (lvl>=3?1:0)),
+    spells: {
+      0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","하급 환영","진실의 일격","폭음의 검"],
+      1: ["인간형 매혹","오색 빛보라","변장","타샤의 끔찍한 웃음","수면"],
+      2: ["잔상","광기의 왕관","인간형 포박","투명","거울 분신","환영력","그림자 검"],
+    }
+  },
+  Bard: {
+    open: (lv, sub) => {
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(lv===3) o["바드 통달"]=["(기술 2개 통달)"];
+      if(sub==="전승학파"){
+        if(lv===3) o["바드 통달"]=["(기술 숙련 3개)"];
+        if(lv===6) o["마법 비밀"]=["(타 클래스 주문 선택)"];
+      }
+      if(sub==="검술학파" && lv===3) o["바드 스타일"]=["결투술","쌍수 전투"];
+      return o;
+    },
+    maxSpellLevel: (lvl)=> Math.min(6, Math.floor((lvl+1)/2)),
+    spells: {
+      0: ["신랄한 조롱","도검 결계","마법사의 손","진실의 일격","친구","춤추는 빛","빛","하급 환영","폭발하는 힘"],
+      1: ["동물 교감","액운","인간형 매혹","상처 치료","변장","불협화음의 속삭임","요정불","깃털 낙하","치유의 단어","영웅심","활보","수면","동물과 대화","타샤의 끔찍한 웃음","천둥파"],
+      2: ["실명","평정심","단검 구름","광기의 왕관","생각 탐지","능력 강화","노예화","금속 가열","인간형 포박","투명","노크","하급 회복","환영력","투명체 감지","파쇄","침묵"],
+      3: ["저주 부여","공포","죽은 척","결계 문양","최면 문양","식물 성장","망자와 대화","악취 구름"],
+      4: ["혼란","차원문","자유 이동","중급 투명","변신"],
+      5: ["인간형 지배","상급 회복","괴물 포박","다중 상처 치료","이차원인 속박","외견"],
+      6: ["깨무는 눈길","오토의 참을 수 없는 춤"],
+    }
+  },
+  Barbarian: {
+    open: (lv, sub) => {
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(sub==="야생의 심장"){
+        if(lv===3) o["야수의 심장"]=["곰의 심장","독수리의 심장","엘크의 심장","호랑이의 심장","늑대의 심장"];
+        if(lv===6 || lv===10) o["야수의 상"]=["곰","침팬지","악어","독수리","엘크","벌꿀오소리","말","호랑이","늑대","울버린"];
+      }
+      return o;
+    }
+  },
+  Warlock: {
+    open: (lv, sub) => {
+      const inv = ["고뇌의 파동","그림자 갑옷","야수의 언어","교언영색","악마의 눈","마족의 활력","수많은 얼굴의 가면","그림자 동행","격퇴의 파동","다섯 숙명의 도둑","정신의 수렁","불길한 징조","고대 비밀의 서","공포의 단어","살점 조각가","혼돈의 하수인","초차원 도약","망자의 속삭임","생명을 마시는 자"];
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(lv===2) o["워락 영창"]=inv;
+      if(lv===5) o["워락 영창"]=inv;
+      if(lv===7) o["워락 영창"]=inv;
+      if(lv===9) o["워락 영창"]=inv;
+      if(lv===12) o["워락 영창"]=inv;
+      return o;
+    },
+    maxSpellLevel: (lvl)=> Math.min(5, Math.floor((lvl+1)/2)),
+    spells: {
+      0: ["도검 결계","뼛속 냉기","섬뜩한 파동","친구","마법사의 손","하급 환영","독 분사","진실의 일격","폭음의 검","망자의 종소리"],
+      1: ["아거티스의 갑옷","하다르의 팔","인간형 매혹","신속 후퇴","지옥의 질책","주술","선악 보호","마녀의 화살"],
+      2: ["단검 구름","광기의 왕관","어둠","노예화","인간형 포박","투명","거울 분신","안개 걸음","약화 광선","파쇄","그림자 검"],
+      3: ["주문 방해","공포","비행 부여","기체 형태","하다르의 굶주림","최면 문양","저주 해제","흡혈의 손길"],
+      4: ["추방","역병","차원문"],
+      5: ["괴물 포박"],
+    }
+  },
+  Sorcerer: {
+    open: (lv) => {
+      const meta2 = ["정밀 주문","원격 주문","연장 주문","이중 주문"];
+      const meta3 = ["증폭 주문","신속 주문","은밀 주문"];
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(lv===2) o["소서러 변형"]=meta2;
+      if(lv===3) o["소서러 변형"]=meta3;
+      if(lv===10) o["소서러 변형"]=meta3;
+      return o;
+    },
+    maxSpellLevel: (lvl)=> Math.min(6, Math.floor((lvl+1)/2)),
+    spells: {
+      0: ["도검 결계","산성 거품","마법사의 손","독 분사","진실의 일격","친구","춤추는 빛","화염살","빛","서리 광선","전격의 손아귀","하급 환영","뼛속 냉기","폭음의 검","폭발하는 힘"],
+      1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","안개구름","얼음 칼","도약 강화","마법사의 갑옷","마력탄","독 광선","방어막","수면","천둥파","마녀의 화살"],
+      2: ["실명","잔상","단검 구름","광기의 왕관","어둠","암시야","생각 탐지","능력 강화","확대/축소","돌풍","인간형 포박","투명","노크","거울 분신","안개 걸음","환영력","작열 광선","투명체 감지","파쇄","거미줄","그림자 검"],
+      3: ["점멸","주문 방해","햇빛","공포","화염구","비행 부여","기체 형태","가속","최면 문양","번개 줄기","에너지 보호","진눈깨비 폭풍","둔화","악취 구름"],
+      4: ["추방","역병","혼란","차원문","야수 지배","상급 투명","얼음 폭풍","변신","바위 피부","화염 벽"],
+      5: ["죽음 구름","냉기 분사","인간형 지배","괴물 포박","곤충 떼","외견","염력","바위의 벽"],
+      6: ["비전 관문","연쇄 번개","죽음의 원","분해","깨무는 눈길","무적의 구체","햇살"],
+    }
+  },
+  Wizard: {
+    open: (lv, sub) => {
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(sub==="칼날 노래" && lv===1) o["전투 방식"]=["(무기 숙련 추가 적용됨)"];
+      return o;
+    },
+    maxSpellLevel: (lvl)=> 6,
+    spells: {
+      0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격","폭음의 검","망자의 종소리"],
+      1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","소환수 찾기","안개구름","기름칠","얼음 칼","도약 강화","활보","마법사의 갑옷","마력탄","선악 보호","독 광선","방어막","수면","타샤의 끔찍한 웃음","천둥파","마녀의 화살"],
+      2: ["비전 자물쇠","실명","잔상","단검 구름","광기의 왕관","어둠","암시야","생각 탐지","확대/축소","화염 구체","돌풍","인간형 포박","투명","노크","마법 무기","멜프의 산성 화살","거울 분신","안개 걸음","환영력","약화 광선","작열 광선","투명체 감지","파쇄","거미줄","그림자 검"],
+      3: ["망자 조종","저주 부여","점멸","주문 방해","공포","죽은 척","화염구","비행 부여","기체 형태","결계 문양","가속","최면 문양","번개 줄기","에너지 보호","저주 해제","진눈깨비 폭풍","둔화","악취 구름","흡혈의 손길"],
+      4: ["추방","역병","혼란","하급 정령 소환","차원문","에바드의 검은 촉수","화염 방패","상급 투명","얼음 폭풍","오틸루크의 탄성 구체","환영 살해자","변신","바위 피부","화염 벽"],
+      5: ["죽음 구름","냉기 분사","정령 소환","인간형 지배","괴물 포박","이차원인 속박","외견","염력","바위의 벽"],
+      6: ["비전 관문","연쇄 번개","죽음의 원","언데드 생성","분해","깨무는 눈길","육신 석화","무적의 구체","오틸루크의 빙결 구체","오토의 참을 수 없는 춤","햇살","얼음의 벽"],
+    }
+  },
+  Ranger: {
+    open: (lv, sub) => {
+      const o: Partial<Record<GrowthKey,string[]>> = {};
+      if(sub==="무리지기" && lv===3) o["주문"]=["꿀벌 군단","해파리 떼","나방 쇄도"];
+      return o;
+    },
+    maxSpellLevel: (lvl)=> (lvl>=9?3: (lvl>=5?2: (lvl>=2?1:0))),
+    spells: {
+      1: ["동물 교감","상처 치료","속박의 일격","안개구름","맛있는 열매","가시 세례","사냥꾼의 표식","도약 강화","활보","동물과 대화"],
+      2: ["나무껍질 피부","암시야","하급 회복","신출귀몰","독 보호","침묵","가시밭"],
+      3: ["포화 소환","햇빛","번개 화살","식물 성장","에너지 보호"],
+    }
+  },
+};
 export default function App() {
   const [lang, setLang] = useState<Lang>("ko");
 
@@ -489,26 +636,185 @@ export default function App() {
     setSkills(picks);
   }
   function rollAll() {
-  if (!lockRace) {
-    const rKeys = Object.keys(RACES) as (keyof typeof RACES)[];
-    const r = choice(rKeys);
-    setRaceKey(r);
-    setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-");
+    if (!lockRace) { const rKeys = Object.keys(RACES) as (keyof typeof RACES)[]; const r = choice(rKeys); setRaceKey(r); setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-"); }
+    if (!lockClass) { const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[]; const k = choice(cKeys); setClassKey(k); setSubclassKo(choice(CLASSES[k].subclasses)); }
+    if (!lockBG) setBg(choice(BACK_KO));
+    rollStats();
+    setTimeout(()=>{ if(!lockWeapons) rollWeapons(); if(!lockSkills) rollSkills(); },0);
   }
-  if (!lockClass) {
-    const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-    const k = choice(cKeys);
-    setClassKey(k);
-    setSubclassKo(choice(CLASSES[k].subclasses));
-  }
-  if (!lockBG) setBg(choice(BACK_KO));
-  rollStats();
 
-  setTimeout(() => {
-    if (!lockWeapons) rollWeapons();
-    if (!lockSkills) rollSkills();
-  }, 0);
-}
+  /** ===== Dice/Vs ===== */
+  function handleRollDice() {
+    const p = parseDice(diceExpr);
+    if(!p){ setDiceDetail("형식 오류"); return; }
+    const rolls = Array.from({length:p.n},()=>1+rand(p.m));
+    const total = rolls.reduce((a,b)=>a+b,0) + p.mod;
+    const modStr = p.mod ? (p.mod>0?`+${p.mod}`:`${p.mod}`) : "";
+    setDiceDetail(`${p.n}d${p.m}${modStr} → [ ${rolls.join(", ")} ] = ${total}`);
+  }
+  function handleVersus() {
+    const list = names.split(/[, \n]+/).map(s=>s.trim()).filter(Boolean);
+    if(list.length===0){ setVsLines(["이름을 입력하세요"]); setVsWinner(""); return; }
+    if(list.length>20){ setVsLines(["참가자가 20명을 초과했습니다 (1d20 고유치 불가)"]); setVsWinner(""); return; }
+    const available = new Set(Array.from({length:20},(_,i)=>i+1));
+    const picks: {name:string; roll:number}[] = [];
+    for(const n of list){
+      // 고유 값 배정: 충돌 시 재시도
+      let r = 1+rand(20); let guard=200;
+      while(!available.has(r) && guard-->0){ r = 1+rand(20); }
+      if(!available.has(r)){
+        // 남은 것 중 하나 할당
+        const rest=[...available]; r=rest[rand(rest.length)];
+      }
+      available.delete(r);
+      picks.push({name:n, roll:r});
+    }
+    const max = Math.max(...picks.map(p=>p.roll));
+    const winners = picks.filter(p=>p.roll===max).map(p=>p.name);
+    setVsLines(picks.map(p=>`${p.name}: ${p.roll}`));
+    setVsWinner(winners.join(", "));
+  }
+
+  /** ===== 클래스별 특성 추천 ===== */
+  function doSuggestGrowth() {
+    if (growClass === "-") { setGrowResult([lang==="ko"?"클래스를 먼저 선택":"Pick class first"]); return; }
+    const rule = GROWTH_DB[growClass];
+    if (!rule) { setGrowResult([lang==="ko"?"아직 이 클래스는 준비중":"Not supported yet"]); return; }
+    const opens = rule.open(growLevel, growSub);
+    const lines: string[] = [];
+
+    // 1) 비주문 선택지: 전투 기법/비전 사격/바드 스타일 등
+    // - 전투의 대가 디폴트: 3레벨 3개, 7레벨 2개, 10레벨 2개
+    const exclude = growExcluded;
+    for (const [k, pool] of Object.entries(opens)) {
+      if (!pool || pool.length===0) continue;
+      const filtered = pool.filter(x=>!exclude.has(`${k}:${x}`));
+      if (k==="전투 기법") {
+        const want = (growLevel===3?3:(growLevel===7?2:(growLevel===10?2:1)));
+        sampleN(filtered, want).forEach(p => lines.push(`${k}: ${p}`));
+        continue;
+      }
+      if (k==="비전 사격") {
+        const want = (growLevel===3?3:(growLevel===7?1:(growLevel===10?1:1)));
+        sampleN(filtered, want).forEach(p => lines.push(`${k}: ${p}`));
+        continue;
+      }
+      if (k==="바드 통달") {
+        // 실제 기술명을 바로 표시(한/영)
+        const classKo = CLASSES[growClass].ko;
+        const n = classKo==="바드" ? 2 : 0;
+        if (n>0) {
+          const allSkills = Object.keys(SK.KO) as SkillKey[];
+          // 통달 후보에서 제외 리스트 반영
+          const cand = allSkills.filter(s=>!exclude.has(`바드 통달:${s}`));
+          sampleN(cand, 2).forEach(s => lines.push(`${k}: ${skillLabel(s)}`));
+        } else {
+          lines.push(...sampleN(filtered, 1).map(p=>`${k}: ${p}`));
+        }
+        continue;
+      }
+      // 일반 항목
+      sampleN(filtered, 1).forEach(p => lines.push(`${k}: ${p}`));
+    }
+
+    // 2) 주문 추천(배울 주문 수만큼) — 최대 주문 레벨까지 누적 풀
+    if (rule.maxSpellLevel && rule.spells) {
+      const maxL = rule.maxSpellLevel(growLevel);
+      const spellsAll: string[] = [];
+      for (let lv=0; lv<=maxL; lv++) if (rule.spells[lv]?.length) spellsAll.push(...rule.spells[lv]!);
+      // 하이 엘프/하이 하프 엘프: 위저드 소마법 1개
+      if (raceKey!=="-" && (subraceKo==="하이 엘프" || subraceKo==="하이 하프 엘프") && GROWTH_DB.Wizard?.spells?.[0]) {
+        const wiz0 = (GROWTH_DB.Wizard.spells[0]!).filter(n=>!exclude.has(`하이엘프 소마법:${n}`));
+        if (wiz0.length) lines.push(`${lang==="ko"?"하이엘프 소마법":"High Elf Cantrip"}: ${choice(wiz0)}`);
+      }
+      // 제외 리스트 반영
+      const filtered = spellsAll.filter(s=>!exclude.has(`주문:${s}`));
+      const want = Math.max(0, growSpellCount|0);
+      sampleN(filtered, want).forEach(s=>lines.push(`주문: ${s}`));
+    }
+
+    setGrowResult(lines.length ? lines : [lang==="ko"?"추천 항목 없음":"No suggestions"]);
+  }
+
+  /** ===== 재주(간단 랜덤 + 세부옵션/제외 토글) ===== */
+  const FEATS = [
+    "능력 향상","운동선수","원소 숙련","경갑 무장","마법 입문","무예 숙련","평갑의 달인","저항력","의식 시전자","숙련가","주문 저격수","술집 싸움꾼","무기의 달인",
+    // 기타 일반 재주도 포함 가능 — 여기선 대표 위주
+  ] as const;
+
+  function rollFeat() {
+    const name = choice(FEATS);
+    const details: string[] = [];
+    // 세부 규칙 반영(요약)
+    if(name==="능력 향상"){
+      const a = choice(ABILS); let b = choice(ABILS); while(b===a) b = choice(ABILS);
+      details.push(`${abilLabel(a)} +1`, `${abilLabel(b)} +1`);
+    } else if(name==="운동선수"){
+      details.push(`${lang==="ko"?"근력/민첩 중 택1":"Pick STR or DEX"}`);
+    } else if(name==="원소 숙련"){
+      details.push("산성/냉기/화염/번개/천둥 중 택1");
+    } else if(name==="경갑 무장" || name==="평갑의 달인" || name==="술집 싸움꾼"){
+      details.push(`${lang==="ko"?"근력/민첩 중 택1":"Pick STR or DEX"}`);
+    } else if(name==="마법 입문"){
+      // 클래스 선택 → 해당 클래스 소마법2 + 1레벨 주문1
+      const classes = ["바드","클레릭","드루이드","소서러","워락","위저드"];
+      const pick = choice(classes);
+      details.push(`${pick}: ${lang==="ko"?"소마법 2개 + 1레벨 주문 1개":"2 cantrips + 1 level-1 spell"}`);
+    } else if(name==="무예 숙련"){
+      details.push("전투의 대가 전투 기법 2개");
+    } else if(name==="저항력"){
+      details.push("근력/민첩/건강/지능/지혜/매력 중 택1");
+    } else if(name==="의식 시전자"){
+      details.push("망자와 대화/소환수 찾기/활보/도약 강화/변장/동물과 대화 중 택2");
+    } else if(name==="숙련가"){
+      details.push(`${lang==="ko"?"기술 3개 숙련":"Proficiency in 3 skills"}`);
+    } else if(name==="주문 저격수"){
+      details.push("뼛속 냉기/섬뜩한 파동/화염살/서리 광선/전격의 손아귀/가시 채찍 중 택1");
+    } else if(name==="무기의 달인"){
+      details.push(`${lang==="ko"?"근력/민첩 중 택1 + 무기 4종 숙련":"Pick STR/DEX + 4 weapon profs"}`);
+    }
+    setFeatName(name);
+    setFeatDetails(details);
+  }
+
+  function excludeGrowthItem(tag: string){
+    const n = new Set(growExcluded); n.add(tag); setGrowExcluded(n);
+  }
+  function unexcludeGrowthItem(tag: string){
+    const n = new Set(growExcluded); n.delete(tag); setGrowExcluded(n);
+  }
+  function excludeFeatDetail(tag: string){
+    const n = new Set(featExcluded); n.add(tag); setFeatExcluded(n);
+  }
+  function unexcludeFeatDetail(tag: string){
+    const n = new Set(featExcluded); n.delete(tag); setFeatExcluded(n);
+  }
+
+  // 드롭다운 라벨
+  const raceOptions = Object.keys(RACES) as (keyof typeof RACES)[];
+  const classOptions = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+
+  // 배경 라벨
+  const bgLabel = (b: Background) => (b === "-" ? "" : (lang === "ko" ? b : BACK_EN[b]));
+
+  // 무기/기술 픽커 후보(단순): 무기는 현재 종족/클래스 풀 기준, 기술은 전체
+  const currentRaceKo = raceKey === "-" ? "" : RACES[raceKey].ko;
+  const currentClassKo = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const weaponPoolNow = computeWeapons(currentRaceKo, currentClassKo, subclassKo);
+  const allSkills = Object.keys(SK.KO) as SkillKey[];
+
+  // 능력치 배지
+  const badge: React.CSSProperties = { display:"inline-block", padding:"0 6px", fontSize:12, borderRadius:999, background:"#111827", color:"#fff", lineHeight:"18px", height:18, margin:"0 2px" };
+
+  // 스타일 공통
+  const row: React.CSSProperties = { display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" };
+  const label: React.CSSProperties = { width:90, color:"#374151" };
+  const select: React.CSSProperties = { padding:"8px 10px", border:"1px solid #e5e7eb", borderRadius:10, minWidth:160 };
+  const btnBase: React.CSSProperties = { padding:"10px 14px", borderRadius:10, border:"1px solid #e5e7eb", background:"#fff", cursor:"pointer" };
+  const btn: React.CSSProperties = { ...btnBase };
+  const btnPrimary: React.CSSProperties = { ...btnBase, background:"#111827", color:"#fff", borderColor:"#111827" };
+  const btnSecondary: React.CSSProperties = { ...btnBase, background:"#f3f4f6" };
+  const input: React.CSSProperties = { padding:"10px 12px", border:"1px solid #e5e7eb", borderRadius:10, minWidth:260 };
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", justifyContent:"center", alignItems:"flex-start", background:"#fff" }}>
@@ -800,3 +1106,4 @@ export default function App() {
     </div>
   );
 }
+
