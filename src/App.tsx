@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 
 /** BG3 랜덤 생성기 · 단일파일 + 우측 패널 (개선판)
  * - 한/영 라벨 토글 (기술/라벨 현지화)
@@ -29,10 +29,7 @@ const uniqueSampleN = <T,>(arr: readonly T[], n: number) => {
   return shuffle(pool).slice(0, Math.max(0, Math.min(n, pool.length)));
 };
 const sampleN = uniqueSampleN;
-const without = <T,>(arr: readonly T[], remove: Set<T> | T[]) => {
-  const bad = Array.isArray(remove) ? new Set(remove) : remove;
-  return arr.filter((x) => !bad.has(x));
-};
+
 
 type Lang = "ko" | "en";
 
@@ -260,7 +257,7 @@ const ALL_WEAPONS_EN = [...SIMPLE, ...MARTIAL] as const;
 const WEAPON_KO: Record<(typeof ALL_WEAPONS_EN)[number], string> = { ...SIMPLE_KO, ...MARTIAL_KO };
 const ALL_WEAPON_KO = Object.values(WEAPON_KO);
 const SHIELD_KO = "방패";
-const SHIELD_EN = "Shield";
+//const SHIELD_EN = "Shield";
 
 // 종족/클래스 숙련(기본)
 const RACE_WEAP_KO: Record<string, string[]> = {
@@ -322,7 +319,6 @@ function parseDice(expr: string): { n:number; m:number; mod:number } | null {
   const n=Math.max(1,parseInt(m[1],10)); const sides=Math.max(2,parseInt(m[2],10)); const mod=m[3]?parseInt(m[3],10):0;
   return { n, m:sides, mod };
 }
-function rollNdM(n:number,m:number){ return Array.from({length:n},()=>1+rand(m)); }
 
 // ============ 주문 풀(핵심 + 패치8 추가) ============
 type SpellPools = {
@@ -544,7 +540,7 @@ const GROWTH_DB: Record<string, {
   Wizard: {
     open: (_lv, _sub) => ({}),
     spells: getClassSpellPools("위저드"),
-    maxSpellLevel: (lvl)=> 6,
+maxSpellLevel: ()=> 6,
   },
   Ranger: {
     open: (lv, sub) => {
@@ -687,7 +683,6 @@ export default function App() {
   }
   function rollWeapons() {
     const raceKo = raceKey === "-" ? "" : RACES[raceKey].ko;
-    const classKo = classKey === "-" ? "" : CLASSES[classKey].ko;
     const picks = computeWeapons(raceKo, classKo, subclassKo);
     setWeaponsKO(picks);
   }
@@ -1019,7 +1014,6 @@ export default function App() {
   // -------- 스타일 --------
   const row: React.CSSProperties = { display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" };
   const label: React.CSSProperties = { width:90, color:"#374151" };
-  const smallLabel: React.CSSProperties = { color:"#6b7280", marginLeft:8, display:"flex", alignItems:"center" };
   const select: React.CSSProperties = { padding:"8px 10px", border:"1px solid #e5e7eb", borderRadius:10, minWidth:160 };
 
   const btnBase: React.CSSProperties = { padding:"10px 14px", borderRadius:10, border:"1px solid #e5e7eb", background:"#fff", cursor:"pointer" };
