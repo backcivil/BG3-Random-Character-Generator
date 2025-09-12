@@ -682,10 +682,15 @@ export default function App() {
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
   function rollWeapons() {
-    const raceKo = raceKey === "-" ? "" : RACES[raceKey].ko;
-    const picks = computeWeapons(raceKo, classKo, subclassKo);
-    setWeaponsKO(picks);
-  }
+  if (lockWeapons) return;
+  const raceKo = raceKey === "-" ? "" : RACES[raceKey].ko;
+  const picks = computeWeapons(
+    raceKo,
+    classKey === "-" ? "" : CLASSES[classKey].ko
+  );
+  setWeaponsKO(picks);
+}
+
   function rollAny2Weapons() {
     setWeaponsKO(randomAny2KO());
   }
@@ -857,7 +862,6 @@ export default function App() {
 
   function rollFeatDetail(name: string): string[] {
     const abilName = (a: Abil) => (lang === "ko" ? abilKo[a] : a);
-    const classKo = classKey === "-" ? "" : CLASSES[classKey].ko;
 
     // 공용: 기술 풀
     const skillPool = Object.keys(SK.KO) as SkillKey[];
