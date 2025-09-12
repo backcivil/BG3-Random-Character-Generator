@@ -340,7 +340,7 @@ function parseDice(expr: string): { n:number; m:number; mod:number } | null {
 
 
 type GrowthKey = "전투 방식" | "전투 기법" | "바드 통달" | "마법 비밀" | "바드 스타일" | "야수의 심장" | "야수의 상" | "워락 영창" | "소서러 변형" | "주문" | "비전 사격" | "하이엘프 소마법" | "확장 주문(위저드)";
-type SpellDB = { maxSpellLevel?: (lvl:number)=>number; spells?: Record<number, string[]>; open: (level:number, subclass?:string)=>Partial<Record<GrowthKey, string[]>>; };
+type SpellDB = { maxSpellLevel?: (lv:number)=>number; spells?: Record<number, string[]>; open: (level:number, subclass?:string)=>Partial<Record<GrowthKey, string[]>>; };
 
 const BM_MANEUVERS = ["사령관의 일격","무장 해제 공격","교란의 일격","날렵한 발놀림","속임수 공격","도발 공격","전투 기법 공격","위협 공격","정밀 공격","밀치기 공격","고양","응수","휩쓸기","다리 걸기 공격"];
 
@@ -351,7 +351,7 @@ const ELDRITCH_SHOTS = [
 
 const GROWTH_DB: Record<string, SpellDB> = {
   Fighter: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const style = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"];
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(lv===1) o["전투 방식"]=style;
@@ -372,7 +372,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
       }
       return o;
     },
-    maxSpellLevel: (lvl)=> Math.min(3, Math.floor((lvl+1)/4)), // EK 주문 대략
+    maxSpellLevel: (lv)=> Math.min(3, Math.floor((lv+1)/4)), // EK 주문 대략
     spells: {
       0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격","폭음의 검"],
       1: ["불타는 손길","오색 보주","마력탄","마법사의 갑옷","선악 보호","방어막","천둥파","마녀의 화살"],
@@ -380,7 +380,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Rogue: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="비전 괴도"){
         if(lv===3) o["확장 주문(위저드)"]=["(1레벨 위저드 주문 택1)"];
@@ -388,7 +388,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
       }
       return o;
     },
-    maxSpellLevel: (lvl)=> (lvl>=7?2: (lvl>=3?1:0)),
+    maxSpellLevel: (lv)=> (lv>=7?2: (lv>=3?1:0)),
     spells: {
       0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","하급 환영","진실의 일격","폭음의 검"],
       1: ["인간형 매혹","오색 빛보라","변장","타샤의 끔찍한 웃음","수면"],
@@ -396,7 +396,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Bard: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(lv===3) o["바드 통달"]=["(기술 2개 통달)"];
       if(sub==="전승학파"){
@@ -406,7 +406,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
       if(sub==="검술학파" && lv===3) o["바드 스타일"]=["결투술","쌍수 전투"];
       return o;
     },
-    maxSpellLevel: (lvl)=> Math.min(6, Math.floor((lvl+1)/2)),
+    maxSpellLevel: (lv)=> Math.min(6, Math.floor((lv+1)/2)),
     spells: {
       0: ["신랄한 조롱","도검 결계","마법사의 손","진실의 일격","친구","춤추는 빛","빛","하급 환영","폭발하는 힘"],
       1: ["동물 교감","액운","인간형 매혹","상처 치료","변장","불협화음의 속삭임","요정불","깃털 낙하","치유의 단어","영웅심","활보","수면","동물과 대화","타샤의 끔찍한 웃음","천둥파"],
@@ -418,7 +418,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Barbarian: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="야생의 심장"){
         if(lv===3) o["야수의 심장"]=["곰의 심장","독수리의 심장","엘크의 심장","호랑이의 심장","늑대의 심장"];
@@ -428,7 +428,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Warlock: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const inv = ["고뇌의 파동","그림자 갑옷","야수의 언어","교언영색","악마의 눈","마족의 활력","수많은 얼굴의 가면","그림자 동행","격퇴의 파동","다섯 숙명의 도둑","정신의 수렁","불길한 징조","고대 비밀의 서","공포의 단어","살점 조각가","혼돈의 하수인","초차원 도약","망자의 속삭임","생명을 마시는 자"];
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(lv===2) o["워락 영창"]=inv;
@@ -438,7 +438,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
       if(lv===12) o["워락 영창"]=inv;
       return o;
     },
-    maxSpellLevel: (lvl)=> Math.min(5, Math.floor((lvl+1)/2)),
+    maxSpellLevel: (lv)=> Math.min(5, Math.floor((lv+1)/2)),
     spells: {
       0: ["도검 결계","뼛속 냉기","섬뜩한 파동","친구","마법사의 손","하급 환영","독 분사","진실의 일격","폭음의 검","망자의 종소리"],
       1: ["아거티스의 갑옷","하다르의 팔","인간형 매혹","신속 후퇴","지옥의 질책","주술","선악 보호","마녀의 화살"],
@@ -458,7 +458,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
       if(lv===10) o["소서러 변형"]=meta3;
       return o;
     },
-    maxSpellLevel: (lvl)=> Math.min(6, Math.floor((lvl+1)/2)),
+    maxSpellLevel: (lv)=> Math.min(6, Math.floor((lv+1)/2)),
     spells: {
       0: ["도검 결계","산성 거품","마법사의 손","독 분사","진실의 일격","친구","춤추는 빛","화염살","빛","서리 광선","전격의 손아귀","하급 환영","뼛속 냉기","폭음의 검","폭발하는 힘"],
       1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","안개구름","얼음 칼","도약 강화","마법사의 갑옷","마력탄","독 광선","방어막","수면","천둥파","마녀의 화살"],
@@ -470,12 +470,12 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Wizard: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="칼날 노래" && lv===1) o["전투 방식"]=["(무기 숙련 추가 적용됨)"];
       return o;
     },
-    maxSpellLevel: (lvl)=> 6,
+    maxSpellLevel: (lv)=> 6,
     spells: {
       0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격","폭음의 검","망자의 종소리"],
       1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","소환수 찾기","안개구름","기름칠","얼음 칼","도약 강화","활보","마법사의 갑옷","마력탄","선악 보호","독 광선","방어막","수면","타샤의 끔찍한 웃음","천둥파","마녀의 화살"],
@@ -487,12 +487,12 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Ranger: {
-    open: (lv, sub) => {   void sub;void lvl;
+    open: (lv, sub) => {   void sub;void lv;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="무리지기" && lv===3) o["주문"]=["꿀벌 군단","해파리 떼","나방 쇄도"];
       return o;
     },
-    maxSpellLevel: (lvl)=> (lvl>=9?3: (lvl>=5?2: (lvl>=2?1:0))),
+    maxSpellLevel: (lv)=> (lv>=9?3: (lv>=5?2: (lv>=2?1:0))),
     spells: {
       1: ["동물 교감","상처 치료","속박의 일격","안개구름","맛있는 열매","가시 세례","사냥꾼의 표식","도약 강화","활보","동물과 대화"],
       2: ["나무껍질 피부","암시야","하급 회복","신출귀몰","독 보호","침묵","가시밭"],
