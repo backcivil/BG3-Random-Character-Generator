@@ -588,9 +588,9 @@ const ALL_WEAPON_KO = Object.values(WEAPON_KO); // 방패 제외용 별도 처�
 const ALL_SKILL_KEYS = Object.keys(SK.KO) as (keyof typeof SK.KO)[];
 
 function rollFeatDetail(featName: string, excluded: Set<string>, lang: Lang): FeatPick {
-  const pickAbil = () => choice(ABILS);
+  
   const abilName = (a: Abil) => (lang === "ko" ? abilKo[a] : a);
-  const ko = (s: string) => s;
+  
 
   const nonShieldWeapons = ALL_WEAPON_KO.filter((w) => w !== SHIELD_KO);
 
