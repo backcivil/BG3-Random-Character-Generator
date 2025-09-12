@@ -589,6 +589,33 @@ export default function App() {
   const [featName, setFeatName] = useState<string>("");
   const [featDetails, setFeatDetails] = useState<string[]>([]);
   const [featExcluded, setFeatExcluded] = useState<Set<string>>(new Set());
+// ====== 락 상태 (없으면 추가) ======
+const [lockRace, setLockRace] = useState(false);
+const [lockClass, setLockClass] = useState(false);
+const [lockBG, setLockBG] = useState(false);
+const [lockWeapons, setLockWeapons] = useState(false);
+const [lockSkills, setLockSkills] = useState(false);
+
+// ====== 롤 함수 ======
+function rollWeapons() {
+  if (lockWeapons) return;
+  const raceKo = raceKey === "-" ? "" : RACES[raceKey].ko;
+  const classKo = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const picks = computeWeapons(raceKo, classKo, subclassKo); // subclass 반영
+  setWeaponsKO(picks);
+}
+
+function rollAny2Weapons() {
+  if (lockWeapons) return;
+  setWeaponsKO(randomAny2KO());
+}
+
+function rollSkills() {
+  if (lockSkills) return;
+  const classKo = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const picks = computeClassSkills(classKo, bg);
+  setSkills(picks);
+}
 
   // 선택 팝업
   const [showWeaponPicker, setShowWeaponPicker] = useState(false);
