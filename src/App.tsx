@@ -351,7 +351,7 @@ const ELDRITCH_SHOTS = [
 
 const GROWTH_DB: Record<string, SpellDB> = {
   Fighter: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const style = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"];
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(lv===1) o["전투 방식"]=style;
@@ -380,7 +380,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Rogue: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="비전 괴도"){
         if(lv===3) o["확장 주문(위저드)"]=["(1레벨 위저드 주문 택1)"];
@@ -396,7 +396,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Bard: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(lv===3) o["바드 통달"]=["(기술 2개 통달)"];
       if(sub==="전승학파"){
@@ -418,7 +418,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Barbarian: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="야생의 심장"){
         if(lv===3) o["야수의 심장"]=["곰의 심장","독수리의 심장","엘크의 심장","호랑이의 심장","늑대의 심장"];
@@ -428,7 +428,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Warlock: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const inv = ["고뇌의 파동","그림자 갑옷","야수의 언어","교언영색","악마의 눈","마족의 활력","수많은 얼굴의 가면","그림자 동행","격퇴의 파동","다섯 숙명의 도둑","정신의 수렁","불길한 징조","고대 비밀의 서","공포의 단어","살점 조각가","혼돈의 하수인","초차원 도약","망자의 속삭임","생명을 마시는 자"];
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(lv===2) o["워락 영창"]=inv;
@@ -470,7 +470,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Wizard: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="칼날 노래" && lv===1) o["전투 방식"]=["(무기 숙련 추가 적용됨)"];
       return o;
@@ -487,7 +487,7 @@ const GROWTH_DB: Record<string, SpellDB> = {
     }
   },
   Ranger: {
-    open: (lv, sub) => {   void sub;
+    open: (lv, sub) => {   void sub;void lvl;
       const o: Partial<Record<GrowthKey,string[]>> = {};
       if(sub==="무리지기" && lv===3) o["주문"]=["꿀벌 군단","해파리 떼","나방 쇄도"];
       return o;
