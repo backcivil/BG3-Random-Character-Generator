@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /** ========= 유틸 ========= */
 const rand = (n: number) => Math.floor(Math.random() * n);
@@ -955,6 +955,16 @@ export default function App() {
   const [pbBonus1, setPbBonus1] = useState<Abil | null>(null);
   const [weaponsKO, setWeaponsKO] = useState<string[]>([]);
   const [skills, setSkills] = useState<SkillKey[]>([]);
+    // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
+useEffect(() => {
+  rollWeaponsBtn();
+}, [raceKey, classKey, subclassKo]);
+
+// 최신 상태로 기술 재계산 (클래스/출신 바뀔 때)
+useEffect(() => {
+  rollSkillsBtn();
+}, [classKey, bg]);
+
 
   // 재주
   const [featId, setFeatId] = useState<FeatId | null>(null);
@@ -1023,10 +1033,13 @@ export default function App() {
     const picks = computeClassSkills(classKoLabel, bg);
     setSkills(picks);
   }
-  function rollAll() {
-    rollRace(); rollClass(); rollBackground(); rollStatsBtn();
-    setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);
-  }
+ function rollAll() {
+  rollRace();
+  rollClass();
+  rollBackground();
+  rollStatsBtn();
+}
+
 
   /** ===== 주사위/승자 ===== */
   function handleRollDice(){
