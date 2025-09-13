@@ -60,7 +60,7 @@ const L = {
     dicePH: "예: 1d4, 3d6+2",
     rollDice: "굴리기",
     vsTitle: "승자 정하기",
-    vsPH: "공백 또는 쉼표로 구분 (레이첼 카룰루크 어두운장충동 만타라)",
+    vsPH: "공백 또는 쉼표로 구분 (예: 레이첼 카룰루크 어두운장충동 만타라)",
     vsRoll: "굴리기 (1d20)",
     winner: "승자",
     manualPanel: "수동 선택 & 고정",
@@ -830,7 +830,15 @@ function suggestGrowth(params: {
   // Fighter
   if (klass==="Fighter") {
     if (level===1) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-    if (sub==="전투의 대가" && [3,7,10].includes(level)) out.push(`전투 기법: ${choice(BM_MANEUVERS.filter(x=>!exclude.has(x)))}`);
+   // 전투의 대가: 3레벨 3개, 7/10레벨 각 2개
+if (sub==="전투의 대가") {
+  const cnt = level===3 ? 3 : (level===7 || level===10 ? 2 : 0);
+  if (cnt > 0) {
+    const picks = pickUnique(BM_MANEUVERS.filter(x=>!exclude.has(x)), cnt, already);
+    for (const m of picks) out.push(`전투 기법: ${m}`);
+  }
+}
+
     if (sub==="투사" && level===10) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
     if (sub==="비전 궁수") {
       if (level===3) {
