@@ -777,11 +777,7 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
   }
   return { name, lines };
 }
-function rollFeatRandom(excluded: Set<string>, lang: Lang){
-  const pick = choice(FEATS_ALL);
-  const r = featRollCore(pick.id, lang, excluded);
-  return { id: pick.id, name: r.name, lines: r.lines };
-}
+
 function rerollSameFeat(id: FeatId, excluded: Set<string>, lang: Lang){
   const r = featRollCore(id, lang, excluded);
   return { id, name: r.name, lines: r.lines };
@@ -1108,10 +1104,14 @@ export default function App() {
   const allSkills = Object.keys(SK.KO) as SkillKey[];
 
   // 종족 바뀌어 허용 신체유형 축소 시 보정
-  useEffect(()=>{
-    const cand = allowedBodyTypes(raceKey);
-    if (!cand.includes(bodyType)) setBodyType(cand[0]);
-  },[raceKey, bodyType]);
+ useEffect(()=>{
+  const cand = allowedBodyTypes(raceKey);
+  if (cand.indexOf(bodyType) === -1) {
+    const first = (cand[0] ?? 1) as 1|2|3|4;
+    setBodyType(first);
+  }
+}, [raceKey, bodyType]);
+
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", justifyContent:"center", alignItems:"flex-start", background:"#fff" }}>
@@ -1187,8 +1187,8 @@ export default function App() {
               {/* 조작 */}
               <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
                 <button onClick={rollAll} style={btnPrimary}>{T.rollAll}</button>
-                <button onClick={()=>{rollRace(); setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyRace}</button>
-                <button onClick={()=>{rollClass(); setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyClass}</button>
+                <button onClick={()=>{rollRace(); window.setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyRace}</button>
+                <button onClick={()=>{rollClass(); window.setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyClass}</button>
                 <button onClick={()=>{rollBackground(); setTimeout(rollSkillsBtn,0);}} style={btn}>{T.onlyBG}</button>
                 <button onClick={rollStatsBtn} style={btn}>{T.rollStats}</button>
                 <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
