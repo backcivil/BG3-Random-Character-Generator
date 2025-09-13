@@ -1021,12 +1021,24 @@ useEffect(() => {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
-  function rollWeaponsBtn() {
-    const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
-    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-    const picks = computeWeapons(raceKoLabel, classKoLabel, subclassKo !== "-" ? subclassKo : undefined);
-    setWeaponsKO(picks);
+ function rollWeaponsBtn() {
+  const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
+  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+
+  // ★ 초기 진입(종족/클래스 미선택)에는 무기 표시 비움
+  if (!raceKoLabel && !classKoLabel) {
+    setWeaponsKO([]);
+    return;
   }
+
+  const picks = computeWeapons(
+    raceKoLabel,
+    classKoLabel,
+    subclassKo !== "-" ? subclassKo : undefined
+  );
+  setWeaponsKO(picks);
+}
+
   function rollAny2Weapons() { setWeaponsKO(randomAny2KO()); }
   function rollSkillsBtn() {
     const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
@@ -1186,7 +1198,7 @@ function excludeFeatItem(detailLine: string){
                 </div>
 
                 <div style={{ color:"#6b7280" }}>{T.background}</div>
-                <div>{bgLabel(bg, lang)}</div>
+                <div>{bg === "-" ? "" : bgLabel(bg, lang)}</div>
 
                 <div style={{ color:"#6b7280" }}>{T.weapons}</div>
                 <div>{weaponsKO.join(", ")}</div>
