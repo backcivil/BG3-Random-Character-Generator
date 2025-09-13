@@ -637,6 +637,13 @@ const FEATS_ALL: { id: FeatId; ko: string; en: string }[] = [
   {id:"WarCaster", ko:"전쟁 시전자", en:"War Caster"},
   {id:"WeaponMaster", ko:"무기의 달인", en:"Weapon Master"},
 ];
+/** ========= 재주 UI 보조 ========= */
+const NO_SUBOPTION_FEATS = new Set<FeatId>([
+  "CrossbowExpert","GreatWeaponMaster","Lucky","Mobile","Sharpshooter","Sentinel",
+  "ShieldMaster","Tough","WarCaster","Actor","Alert","Charger","DungeonDelver",
+  "Durable","MageSlayer","Performer","PolearmMaster"
+]);
+
 // ==== 재주 줄-단위 리롤 유틸 ====
 // "원소 숙련: 산성" -> "산성" 처럼 꼬리값만 추출
 function extractTail(line: string): string {
@@ -1118,11 +1125,7 @@ export default function App() {
   const [featName, setFeatName] = useState<string>("");
   const [featDetails, setFeatDetails] = useState<string[]>([]);
   const [featExcluded, setFeatExcluded] = useState<Set<string>>(new Set());
-// 선택지(하위 옵션) 없는 재주 → [제외] 버튼 숨김
-const NO_SUBOPTION_FEATS = new Set<FeatId>([
-  "CrossbowExpert","GreatWeaponMaster","Lucky","Mobile","Sharpshooter","Sentinel",
-  "ShieldMaster","Tough","WarCaster","Actor","Alert","Charger","DungeonDelver",
-  "Durable","MageSlayer","Performer","PolearmMaster"
+
 ]);
 
 
@@ -1429,18 +1432,41 @@ function excludeFeatItem(line: string){
                 <button onClick={rollFeatBtn} style={btn}>{T.rollFeat}</button>
                 {featName && <div style={{ fontWeight:700 }}>{featName}</div>}
               </div>
-              {featDetails.length>0 && (
+             {featDetails.length>0 && (
   <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
     {featDetails.map((d,i)=>(
       <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
         <span>• {d}</span>
-        {featId && !NO_SUBOPTION_FEATS.has(featId) && (
-          <button style={btnSecondary} onClick={()=>excludeFeatItem(d)}>
+        {!(featId && NO_SUBOPTION_FEATS.has(featId)) && (
+          <button
+            style={btnSecondary}
+            onClick={()=>excludeFeatItem(d)}
+          >
             {T.exclude}
           </button>
         )}
       </div>
     ))}
+
+    {Array.from(featExcluded).length>0 && (
+      <div style={{ marginTop:6 }}>
+        <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {Array.from(featExcluded).map(x=>(
+            <button
+              key={x}
+              style={btnSecondary}
+              onClick={()=>unexcludeFeatItem(x)}
+            >
+              {T.clear}: {x}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
 
     {Array.from(featExcluded).length>0 && (
       <div style={{ marginTop:6 }}>
