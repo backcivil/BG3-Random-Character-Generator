@@ -1384,13 +1384,21 @@ function excludeFeatItem(detailLine: string){
           <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:360 }}>
             <h4 style={{ marginTop:0 }}>{T.weapons}</h4>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
-              {Array.from(new Set(Object.values(WEAPON_KO))).map(w=>(
-                <label key={w} style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <input type="checkbox" checked={tempWeapons.has(w)} onChange={(e)=>{
-                    const n=new Set(tempWeapons); e.target.checked?n.add(w):n.delete(w); setTempWeapons(n);
-                  }}/>
-                  <span>{w}</span>
-                </label>
+              {ALL_WEAPONS_KO_LIST.map(w=>(
+  <label key={w} style={{ display:"flex", gap:8, alignItems:"center" }}>
+    <input
+      type="checkbox"
+      checked={tempWeapons.has(w)}
+      onChange={(e)=>{
+        const n = new Set(tempWeapons);
+        e.target.checked ? n.add(w) : n.delete(w);
+        setTempWeapons(n);
+      }}
+    />
+    <span>{w}</span>
+  </label>
+))}
+
               ))}
             </div>
             <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
