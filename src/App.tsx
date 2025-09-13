@@ -10,7 +10,6 @@ const shuffle = <T,>(arr: readonly T[]) => {
 };
 const sampleN = <T,>(arr: readonly T[], n: number) => shuffle(arr).slice(0, Math.max(0, Math.min(n, arr.length)));
 
-
 type Lang = "ko" | "en";
 
 /** ========= 다국어 ========= */
@@ -223,20 +222,17 @@ const CLASS_SHIELD = new Set(["파이터","팔라딘","클레릭","레인저","�
 
 // 서브클래스/권역 특수 무기 숙련
 const SUBCLASS_EXTRA_WEAPONS: Record<string,string[]> = {
-  // Cleric domains
   "클레릭:폭풍 권역": Object.values(MARTIAL_KO),
   "클레릭:전쟁 권역": Object.values(MARTIAL_KO),
   "클레릭:죽음 권역": Object.values(MARTIAL_KO),
-  // Wizard Bladesinger
   "위저드:칼날 노래": ["단검","장검","레이피어","협도","소검","낫"],
 };
 
 // ====== 주문 풀(요약) : 패치8 포함 ======
-const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"]; // Booming Blade, Force-like, Toll the Dead
-const LV2_PATCH8 = ["그림자 검"]; // Shadow Blade
+const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"];
+const LV2_PATCH8 = ["그림자 검"];
 
-// ====== 클래스별 주문 목록(요약; 네이밍은 제공 목록 기준) ======
-// 바드
+// ====== 클래스별 주문 목록 ======
 const BARD_SPELLS = {
   0: ["신랄한 조롱","도검 결계","마법사의 손","진실의 일격","친구","춤추는 빛","빛","하급 환영", ...CANTRIPS_PATCH8],
   1: ["동물 교감","액운","인간형 매혹","상처 치료","변장","불협화음의 속삭임","요정불","깃털 낙하","치유의 단어","영웅심","활보","수면","동물과 대화","타샤의 끔찍한 웃음","천둥파"],
@@ -246,7 +242,6 @@ const BARD_SPELLS = {
   5: ["인간형 지배","상급 회복","괴물 포박","다중 상처 치료","이차원인 속박","외견"],
   6: ["깨무는 눈길","오토의 참을 수 없는 춤"],
 };
-// 클레릭
 const CLERIC_SPELLS = {
   0: ["기적술","신성한 불길","인도","저항","빛","도검 결계","불꽃 생성"],
   1: ["신앙의 방패","선악 보호","성역","액운","명령","축복","상처 치료","치유의 단어","유도 화살","상처 유발","물 생성 또는 제거"],
@@ -256,7 +251,6 @@ const CLERIC_SPELLS = {
   5: ["선악 해제","이차원인 속박","상급 회복","곤충 떼","화염 일격","다중 상처 치료","감염"],
   6: ["영웅의 연회","이차원인 아군","검 방벽","치유","언데드 생성","해악"],
 };
-// 드루이드
 const DRUID_SPELLS = {
   0: ["인도","독 분사","불꽃 생성","저항","마법 곤봉","가시 채찍"],
   1: ["얼음 칼","휘감기","안개구름","동물과 대화","동물 교감","인간형 매혹","천둥파","치유의 단어","상처 치료","요정불","도약 강화","활보","맛있는 열매","물 생성 또는 제거"],
@@ -266,7 +260,6 @@ const DRUID_SPELLS = {
   5: ["상급 회복","이차원인 속박","정령 소환","곤충 떼","다중 상처 치료","바위의 벽","감염"],
   6: ["영웅의 연회","가시의 벽","치유","햇살","바람 걸음"],
 };
-// 소서러
 const SORCERER_SPELLS = {
   0: ["도검 결계","산성 거품","마법사의 손","독 분사","진실의 일격","친구","춤추는 빛","화염살","빛","서리 광선","전격의 손아귀","하급 환영","뼛속 냉기", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","안개구름","얼음 칼","도약 강화","마법사의 갑옷","마력탄","독 광선","방어막","수면","천둥파","마녀의 화살"],
@@ -276,7 +269,6 @@ const SORCERER_SPELLS = {
   5: ["죽음 구름","냉기 분사","인간형 지배","괴물 포박","곤충 떼","외견","염력","바위의 벽"],
   6: ["비전 관문","연쇄 번개","죽음의 원","분해","깨무는 눈길","무적의 구체","햇살"],
 };
-// 워락
 const WARLOCK_BASE = {
   0: ["도검 결계","뼛속 냉기","섬뜩한 파동","친구","마법사의 손","하급 환영","독 분사","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["아거티스의 갑옷","하다르의 팔","인간형 매혹","신속 후퇴","지옥의 질책","주술","선악 보호","마녀의 화살"],
@@ -285,14 +277,12 @@ const WARLOCK_BASE = {
   4: ["추방","역병","차원문"],
   5: ["괴물 포박"],
 };
-// 워락 확장 주문(서브클래스)
 const WARLOCK_EXP: Record<string, Record<number,string[]>> = {
   "마족": { 1:["불타는 손길","명령"], 3:["실명","작열 광선"], 5:["화염구","악취 구름"], 7:["화염 방패","화염 벽"], 9:["냉기 분사","화염 일격"] },
   "고대의 지배자": { 1:["불협화음의 속삭임","타샤의 끔찍한 웃음"], 3:["생각 탐지","환영력"], 5:["저주 부여","둔화"], 7:["야수 지배","에바드의 검은 촉수"], 9:["인간형 지배","염력"] },
   "대요정": { 1:["요정불","수면"], 3:["평정심","환영력"], 5:["점멸","식물 성장"], 7:["야수 지배","상급 투명"], 9:["인간형 지배","외견"] },
   "주술 칼날": { 7:["충격의 강타"] },
 };
-// 위저드
 const WIZARD_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","소환수 찾기","안개구름","기름칠","얼음 칼","도약 강화","활보","마법사의 갑옷","마력탄","선악 보호","독 광선","방어막","수면","타샤의 끔찍한 웃음","천둥파","마녀의 화살"],
@@ -302,7 +292,6 @@ const WIZARD_SPELLS = {
   5: ["죽음 구름","냉기 분사","정령 소환","인간형 지배","괴물 포박","이차원인 속박","외견","염력","바위의 벽"],
   6: ["비전 관문","연쇄 번개","죽음의 원","언데드 생성","분해","깨무는 눈길","육신 석화","무적의 구체","오틸루크의 빙결 구체","오토의 참을 수 없는 춤","햇살","얼음의 벽"],
 };
-// 레인저
 const RANGER_SPELLS = {
   1: ["동물 교감","상처 치료","속박의 일격","안개구름","맛있는 열매","가시 세례","사냥꾼의 표식","도약 강화","활보","동물과 대화"],
   2: ["나무껍질 피부","암시야","하급 회복","신출귀몰","독 보호","침묵","가시밭"],
@@ -317,22 +306,20 @@ const MONK_FE_SPELLS = {
   6: ["북풍의 손아귀","불지옥의 포옹","정상의 징"],
   11:["불사조의 불꽃","안개 태세","바람 타기"],
 };
-// 파이터(비술 기사) 주문 풀
+// 파이터(비술 기사) / 로그(비전 괴도)
 const EK_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","오색 보주","마력탄","마법사의 갑옷","선악 보호","방어막","천둥파","마녀의 화살"],
   2: ["멜프의 산성 화살","비전 자물쇠","어둠","돌풍","작열 광선","파쇄", ...LV2_PATCH8],
 };
-// 로그(비전 괴도) 주문 풀
 const AT_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["인간형 매혹","오색 빛보라","변장","타샤의 끔찍한 웃음","수면"],
   2: ["잔상","광기의 왕관","인간형 포박","투명","거울 분신","환영력", ...LV2_PATCH8],
 };
 
-// 비전 궁수 - 비전 사격 목록
+// 비전 궁수 / 전투의 대가
 const ELDRITCH_SHOTS = ["추방 화살","현혹 화살","폭발 화살","약화 화살","속박 화살","추적 화살","그림자 화살","관통 화살"];
-// 전투의 대가 - 전투 기법
 const BM_MANEUVERS = ["사령관의 일격","무장 해제 공격","교란의 일격","날렵한 발놀림","속임수 공격","도발 공격","전투 기법 공격","위협 공격","정밀 공격","밀치기 공격","고양 응수","휩쓸기","다리 걸기 공격"];
 
 /** ========= 포인트바이 ========= */
@@ -358,20 +345,21 @@ function parseDice(expr: string): { n:number; m:number; mod:number } | null {
   const n=Math.max(1,parseInt(m[1],10)); const sides=Math.max(2,parseInt(m[2],10)); const mod=m[3]?parseInt(m[3],10):0;
   return { n, m:sides, mod };
 }
+
 /** ========= 무기/기술 계산 ========= */
 function randomAny2KO(): string[] {
   const picks = shuffle(ALL_WEAPONS_EN).slice(0, 2);
   return picks.map(w=>WEAPON_KO[w]);
 }
-function computeWeapons(raceKo: string, classKo: string, subclass?: string): string[] {
-  const racePool = RACE_WEAP_KO[raceKo] || [];
-  const classPool = CLASS_WEAP_KO[classKo] || [];
+function computeWeapons(raceKoLabel: string, classKoLabel: string, subclass?: string): string[] {
+  const racePool = RACE_WEAP_KO[raceKoLabel] || [];
+  const classPool = CLASS_WEAP_KO[classKoLabel] || [];
   let pool = Array.from(new Set([...racePool, ...classPool]));
-  if (classKo === "몽크") pool = Array.from(new Set([...pool, "비무장 공격"]));
-  const hasShield = (raceKo && RACE_SHIELD.has(raceKo)) || (classKo && CLASS_SHIELD.has(classKo));
+  if (classKoLabel === "몽크") pool = Array.from(new Set([...pool, "비무장 공격"]));
+  const hasShield = (raceKoLabel && RACE_SHIELD.has(raceKoLabel)) || (classKoLabel && CLASS_SHIELD.has(classKoLabel));
   if (hasShield && !pool.includes(SHIELD_KO)) pool.push(SHIELD_KO);
-  if (classKo && subclass) {
-    const key = `${classKo}:${subclass}`;
+  if (classKoLabel && subclass) {
+    const key = `${classKoLabel}:${subclass}`;
     if (SUBCLASS_EXTRA_WEAPONS[key]) pool = Array.from(new Set([...pool, ...SUBCLASS_EXTRA_WEAPONS[key]]));
   }
   if (pool.length === 0) return randomAny2KO();
@@ -386,12 +374,10 @@ function computeClassSkills(classKo: string, bgSel: Background): SkillKey[] {
   return sampleN(pool, cfg.n);
 }
 
-/** ========= 레이블 유틸 ========= */
 function bgLabel(bg: Background, lang: Lang="ko") {
   if (bg === "-") return "-";
   return lang === "ko" ? bg : BACK_EN[bg];
 }
-
 /** ========= 승자 정하기 ========= */
 function uniqueRolls(names: string[]): { lines: string[]; winner: string } {
   const res: Record<string, number> = {};
@@ -400,10 +386,7 @@ function uniqueRolls(names: string[]): { lines: string[]; winner: string } {
   for (const n of names) {
     let roll = rand(20) + 1;
     let rerolls = 0;
-    while (used.has(roll) && rerolls < 50) { // 중복이면 재굴림
-      roll = rand(20) + 1;
-      rerolls++;
-    }
+    while (used.has(roll) && rerolls < 50) { roll = rand(20) + 1; rerolls++; }
     used.add(roll);
     res[n] = roll;
   }
@@ -430,13 +413,13 @@ function maxSpellLevelByClass(klass: string, level: number): number {
       return Math.min(3, Math.floor((level + 1) / 4));
     case "Rogue":  // AT 전용
       return level >= 7 ? 2 : level >= 3 ? 1 : 0;
-    case "Monk":   // 사원소의 길: 특수 테이블(아래)
+    case "Monk":   // 사원소의 길: 특수 테이블
     default:
       return 0;
   }
 }
 
-// 사원소 몽크: 레벨 구간별 "알고 있는 주문 수" (4레벨부터 교체 가능)
+// 사원소 몽크: 레벨 구간별 "알고 있는 주문 수"(소마법 제외)
 function monkFEKnown(level: number): number {
   if (level <= 6) return 3;       // 3~6 : 3개
   if (level <= 9) return 4;       // 7~9 : 4개
@@ -453,22 +436,19 @@ function knownSpellCount(klass: string, sub: string, level: number): number {
     for (let lv = 3; lv <= level; lv++) if (lv % 2 === 1) c++;
     return c;
   }
-  if (klass === "Bard") return 4 + (level - 1); // 1레벨 4개, 매 레벨 +1
+  if (klass === "Bard") return 4 + (level - 1);
   if (klass === "Sorcerer") return 2 + (level - 1);
   if (klass === "Warlock") return 2 + (level - 1);
   if (klass === "Rogue" && sub === "비전 괴도") {
-    // 제공표: 3→3, 4→4, 5→4, 6→4, 7→5, 8→6, 9→6, 10→7, 11→8, 12→8
     const map: Record<number, number> = {3:3,4:4,5:4,6:4,7:5,8:6,9:6,10:7,11:8,12:8};
     return map[level] ?? 0;
   }
   if (klass === "Fighter" && sub === "비술 기사") {
-    // 제공표: 3→3, 4→4, 5→4, 6→4, 7→6, 8→7, 9→7, 10→8, 11→9, 12→9
     const map: Record<number, number> = {3:3,4:4,5:4,6:4,7:6,8:7,9:7,10:8,11:9,12:9};
     return map[level] ?? 0;
   }
   if (klass === "Monk" && sub === "사원소의 길") return monkFEKnown(level);
-  // 준비형(Cleric/Druid/Wizard/Paladin 등)은 교체 개념이 달라서 0 처리
-  return 0;
+  return 0; // 준비형(Cleric/Druid/Wizard/Paladin 등)
 }
 
 // 캐릭터가 배울 수 있는 주문 풀(클래스/서브/레벨 기준)
@@ -487,13 +467,11 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
   if (klass==="Sorcerer") return upTo(SORCERER_SPELLS, maxSpellLevelByClass(klass, level));
   if (klass==="Warlock") {
     const base = upTo(WARLOCK_BASE, maxSpellLevelByClass(klass, level));
-    // 서브클래스 확장 합치기
     const exp = WARLOCK_EXP[sub] || {};
     for (const k of Object.keys(exp)) {
       const gate = Number(k);
       if (level >= (gate===1?1:gate)) {
         for (const s of exp[gate]) {
-          // 레벨 추정 불가 시(예: "충격의 강타")는 가급적 근접 레벨에 흡수 — 여기선 4레벨 스펠로 본다
           let sl = 4;
           if (WARLOCK_BASE[1]?.includes(s)) sl=1;
           else if (WARLOCK_BASE[2]?.includes(s)) sl=2;
@@ -511,10 +489,10 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
   if (klass==="Fighter" && sub==="비술 기사") return upTo(EK_SPELLS, maxSpellLevelByClass("Fighter", level));
   if (klass==="Rogue" && sub==="비전 괴도") return upTo(AT_SPELLS, maxSpellLevelByClass("Rogue", level));
   if (klass==="Monk" && sub==="사원소의 길") {
-    // 3/6/11 레벨에서 풀 확장 → 누적 풀 사용
+    // 3/6/11 레벨에서 풀 확장 → 누적 풀 사용 (표시용으로 레벨 3에 모아둠)
     const full: Record<number,string[]> = {};
     const add = (arr:string[]) => arr.forEach(s=>{
-      const sl = 3; // 몽크 스킬은 고유 — 표시에선 "주문"처럼 취급
+      const sl = 3;
       full[sl]=Array.from(new Set([...(full[sl]||[]), s]));
     });
     add(MONK_FE_SPELLS[3]);
@@ -525,9 +503,8 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
   return {};
 }
 
-// 바드/소서러/워락/레인저/AT/EK/사원소 몽크 등 "교체 가능" 레벨에서는 실제 1dN을 굴려 표시
+// 바드/소서러/워락/레인저/AT/EK/사원소 몽크 — 교체 가능한 레벨이면 실제 1dN을 굴려 출력
 function buildReplaceLine(klass: string, sub: string, level: number): string | null {
-  // 교체 가능한 경우만
   const canReplace =
     (klass==="Ranger" && level>=3) ||
     (klass==="Bard" && level>=2) ||
@@ -543,16 +520,16 @@ function buildReplaceLine(klass: string, sub: string, level: number): string | n
   return `교체 굴림 (1d${known} → ${roll}): 기존 ${roll}번째 주문 제거 → 레벨 허용 주문 중 1개 추가`;
 }
 
-// 성장 추천: 현재 클래스/서브/레벨/배울 주문 수/제외목록을 바탕으로 항목 생성
+// 성장 추천 본체
 function suggestGrowth(params: {
   klass: string; sub: string; level: number; count: number;
-  raceKo?: string; subraceKo?: string;
+  subraceKo?: string;
   exclude: Set<string>;
 }): string[] {
-  const { klass, sub, level, count, raceKo, subraceKo, exclude } = params;
+  const { klass, sub, level, count, subraceKo, exclude } = params;
   const out: string[] = [];
 
-  // 특성/선택 항목(일부)
+  // Fighter
   if (klass==="Fighter") {
     if (level===1) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
     if (sub==="전투의 대가" && [3,7,10].includes(level)) out.push(`전투 기법: ${choice(BM_MANEUVERS.filter(x=>!exclude.has(x)))}`);
@@ -567,8 +544,9 @@ function suggestGrowth(params: {
       if (level===7 || level===10) out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
     }
   }
+
+  // Barbarian — 야생의 심장: 3~12 계속 교체 가능
   if (klass==="Barbarian" && sub==="야생의 심장" && level>=3) {
-    // 3~12 동안 계속 교체 가능 — 매번 하나 추천
     const hearts = ["곰의 심장","독수리의 심장","엘크의 심장","호랑이의 심장","늑대의 심장"];
     out.push(`야수의 심장: ${choice(hearts.filter(x=>!exclude.has(x)))}`);
     if (level===6 || level===10) {
@@ -576,6 +554,8 @@ function suggestGrowth(params: {
       out.push(`야수의 상: ${choice(aspects.filter(x=>!exclude.has(x)))}`);
     }
   }
+
+  // Ranger — 선호 적/탐험가/전투 방식 + 무리지기 교체
   if (klass==="Ranger") {
     if (level===1) {
       const fav = ["현상금 사냥꾼","장막의 수호자","마법사 파괴자","레인저 나이트","성스러운 추적자"];
@@ -596,7 +576,7 @@ function suggestGrowth(params: {
     }
   }
 
-  // 하이 엘프/하이 하프 엘프 — 위저드 소마법 1개(항상 적용)
+  // 하이 엘프/하프 — 위저드 소마법 1개
   if ((subraceKo==="하이 엘프" || subraceKo==="하이 하프 엘프") && level>=1) {
     const wiz0 = WIZARD_SPELLS[0] || [];
     out.push(`종족 소마법: ${choice(wiz0.filter(x=>!exclude.has(x)))}`);
@@ -608,14 +588,12 @@ function suggestGrowth(params: {
   let remain = Math.max(0, count);
   while (remain-- > 0) {
     if (allLv.length===0) break;
-    // 상한 레벨(클래스에 맞는 최고 주문 레벨)에서 랜덤 선택
     const pickLv = allLv[allLv.length-1];
     const candidates = (pool[pickLv]||[]).filter(x=>!exclude.has(x));
     if (candidates.length===0) break;
     out.push(`주문: ${choice(candidates)}`);
   }
 
-  // 교체 굴림 라인
   const rep = buildReplaceLine(klass, sub, level);
   if (rep) out.push(rep);
 
@@ -623,7 +601,6 @@ function suggestGrowth(params: {
 }
 
 /** ========= 재주(Feats) ========= */
-// 전체 목록 + 옵션형은 내부 랜덤
 type FeatId =
   | "AbilityImprovements" | "Actor" | "Alert" | "Athlete" | "Charger" | "CrossbowExpert" | "DefensiveDuelist"
   | "DualWielder" | "DungeonDelver" | "Durable" | "ElementalAdept" | "GreatWeaponMaster" | "HeavilyArmoured"
@@ -677,36 +654,32 @@ const FEATS_ALL: { id: FeatId; ko: string; en: string }[] = [
   {id:"WeaponMaster", ko:"무기의 달인", en:"Weapon Master"},
 ];
 
-// 재주 옵션 생성기
+// 재주 옵션 생성기 (옵션형은 내부 랜덤, 제외 목록 반영)
 function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: string; lines: string[] } {
   const label = FEATS_ALL.find(f=>f.id===id)!;
   const name = lang==="ko"?label.ko:label.en;
   const lines: string[] = [];
-
-  const abilKo = (a:string)=>({STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"} as any)[a]||a;
+  const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
 
   switch(id){
     case "AbilityImprovements": {
-      // 능력 2개 랜덤
       const picks = sampleN(["STR","DEX","CON","INT","WIS","CHA"], 2);
-      lines.push(`능력 +2: ${lang==="ko"?picks.map(abilKo).join(", "):picks.join(", ")}`);
+      lines.push(`능력 +2: ${lang==="ko"?picks.map(a=>abilKoMap[a]).join(", "):picks.join(", ")}`);
       break;
     }
-    case "Athlete": {
-      const one = choice(["STR","DEX"].filter(x=>!excluded.has(abilKo(x))));
-      lines.push(`선택 능력 +1: ${lang==="ko"?abilKo(one):one}`); break;
-    }
-    case "ElementalAdept": {
-      const elem = choice(["산성","냉기","화염","번개","천둥"].filter(x=>!excluded.has(x)));
-      lines.push(`원소 숙련: ${elem}`); break;
-    }
+    case "Athlete":
     case "LightlyArmoured":
     case "HeavilyArmoured":
     case "MediumArmourMaster":
     case "ModeratelyArmoured":
     case "HeavyArmourMaster": {
-      const one = choice(["STR","DEX"].filter(x=>!excluded.has(abilKo(x))));
-      lines.push(`능력 +1: ${lang==="ko"?abilKo(one):one}`); break;
+      const pool = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
+      if (pool.length>0) lines.push(`능력 +1: ${choice(pool)}`);
+      break;
+    }
+    case "ElementalAdept": {
+      const elem = choice(["산성","냉기","화염","번개","천둥"].filter(x=>!excluded.has(x)));
+      lines.push(`원소 숙련: ${elem}`); break;
     }
     case "MagicInitiate:Bard":
     case "MagicInitiate:Cleric":
@@ -714,18 +687,19 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
     case "MagicInitiate:Sorcerer":
     case "MagicInitiate:Warlock":
     case "MagicInitiate:Wizard": {
-      // 해당 클래스의 소마법 2개 + 1레벨 주문 1개
       const base = id.split(":")[1];
       const pool = (base==="Bard"?BARD_SPELLS: base==="Cleric"?CLERIC_SPELLS: base==="Druid"?DRUID_SPELLS: base==="Sorcerer"?SORCERER_SPELLS: base==="Warlock"?WARLOCK_BASE: WIZARD_SPELLS);
       const can = (pool[0]||[]).filter(x=>!excluded.has(x));
       const l1 = (pool[1]||[]).filter(x=>!excluded.has(x));
-      lines.push(`소마법: ${sampleN(can,2).join(", ")}`);
+      if (can.length>0) lines.push(`소마법: ${sampleN(can,2).join(", ")}`);
       if (l1.length>0) lines.push(`1레벨 주문: ${choice(l1)}`);
       break;
     }
     case "MartialAdept": {
-      lines.push(`전투 기법: ${choice(BM_MANEUVERS.filter(x=>!excluded.has(x)))}`);
-      lines.push(`전투 기법: ${choice(BM_MANEUVERS.filter(x=>!excluded.has(x)))}`);
+      const one = choice(BM_MANEUVERS.filter(x=>!excluded.has(x)));
+      const two = choice(BM_MANEUVERS.filter(x=>!excluded.has(x) && x!==one));
+      lines.push(`전투 기법: ${one}`);
+      if (two) lines.push(`전투 기법: ${two}`);
       break;
     }
     case "Resilient": {
@@ -737,8 +711,8 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
       lines.push(`의식 주문: ${two.join(", ")}`); break;
     }
     case "Skilled": {
-      const two = sampleN(Object.keys(SK.KO) as SkillKey[], 3).filter(x=>!excluded.has(SK.KO[x]));
-      lines.push(`기술 숙련 3개: ${two.map(x=>lang==="ko"?SK.KO[x]:SK.EN[x]).join(", ")}`);
+      const three = sampleN(Object.keys(SK.KO) as SkillKey[], 3).filter(x=>!excluded.has(SK.KO[x]));
+      lines.push(`기술 숙련 3개: ${three.map(x=>lang==="ko"?SK.KO[x]:SK.EN[x]).join(", ")}`);
       break;
     }
     case "SpellSniper": {
@@ -747,19 +721,19 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
       break;
     }
     case "TavernBrawler": {
-      const one = choice(["STR","CON"].filter(x=>!excluded.has(abilKo(x))));
-      lines.push(`능력 +1: ${lang==="ko"?abilKo(one):one}`); break;
+      const pool = ["STR","CON"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
+      if (pool.length>0) lines.push(`능력 +1: ${choice(pool)}`);
+      break;
     }
     case "WeaponMaster": {
-      const abil = choice(["STR","DEX"].filter(x=>!excluded.has(abilKo(x))));
-      lines.push(`능력 +1: ${lang==="ko"?abilKo(abil):abil}`);
+      const abil = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
+      if (abil.length>0) lines.push(`능력 +1: ${choice(abil)}`);
       const all = Array.from(new Set(Object.values(WEAPON_KO)));
       const pool = all.filter(x=>!excluded.has(x));
       lines.push(`무기 숙련(4): ${sampleN(pool,4).join(", ")}`);
       break;
     }
     default: {
-      // 옵션 없는 재주는 이름만 출력
       lines.push(lang==="ko" ? "특성 적용" : "Gain feat benefits");
     }
   }
@@ -774,7 +748,6 @@ function rerollSameFeat(id: FeatId, excluded: Set<string>, lang: Lang){
   const r = featRollCore(id, lang, excluded);
   return { id, name: r.name, lines: r.lines };
 }
-
 /** ========= 스타일 ========= */
 const btn = { padding:"8px 12px", border:"1px solid #e5e7eb", borderRadius:10, background:"#f8fafc", cursor:"pointer" } as const;
 const btnPrimary = { ...btn, background:"#111827", color:"#fff", borderColor:"#111827" } as const;
@@ -784,6 +757,7 @@ const select = { padding:"10px 12px", border:"1px solid #e5e7eb", borderRadius:1
 const row = { display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" } as const;
 const label = { width:72, color:"#374151" } as const;
 const badge = { display:"inline-block", padding:"2px 6px", borderRadius:999, background:"#111827", color:"#fff", fontSize:12, lineHeight:1 } as const;
+
 export default function App() {
   const [lang, setLang] = useState<Lang>("ko");
 
@@ -855,16 +829,15 @@ export default function App() {
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
   function rollWeaponsBtn() {
-  const raceKoStr  = raceKey === "-" ? "" : RACES[raceKey].ko;
-  const classKoStr = classKey === "-" ? "" : CLASSES[classKey].ko;
-  const picks = computeWeapons(raceKoStr, classKoStr, subclassKo);
-  setWeaponsKO(picks);
-}
-
+    const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
+    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+    const picks = computeWeapons(raceKoLabel, classKoLabel, subclassKo !== "-" ? subclassKo : undefined);
+    setWeaponsKO(picks);
+  }
   function rollAny2Weapons() { setWeaponsKO(randomAny2KO()); }
   function rollSkillsBtn() {
-    const classKo = classKey === "-" ? "" : CLASSES[classKey].ko;
-    const picks = computeClassSkills(classKo, bg);
+    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+    const picks = computeClassSkills(classKoLabel, bg);
     setSkills(picks);
   }
   function rollAll() {
@@ -888,42 +861,31 @@ export default function App() {
   }
 
   /** ===== 성장 추천 ===== */
- // === 성장 추천 실행 ===
-function doSuggestGrowth() {
-  if (growClass === "-" || growLevel < 1) {
-    setGrowResult([]);
-    return;
+  function doSuggestGrowth() {
+    if (growClass === "-" || growLevel < 1) { setGrowResult([]); return; }
+    const list = suggestGrowth({
+      klass: String(growClass),
+      sub: growSub === "-" ? "" : growSub,
+      level: growLevel,
+      count: growSpellCount,
+      subraceKo,
+      exclude: growExcluded,
+    });
+    setGrowResult(list);
   }
-  const list = suggestGrowth({
-    klass: String(growClass),
-    sub: growSub === "-" ? "" : growSub,
-    level: growLevel,
-    count: growSpellCount,
-    subraceKo,            // 상태값 그대로 사용
-    exclude: growExcluded,
-  });
-  setGrowResult(list);
-}
-
-
-
   function excludeGrowthItem(line: string){
-    // "라벨: 값"에서 값만 추출하여 제외
     const val = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
     const next = new Set(growExcluded); next.add(val);
     setGrowExcluded(next);
-    // 같은 카테고리에서 즉시 재굴림 (주문/전투 기법/비전 사격/…)
     const kind = line.includes(":") ? line.split(":")[0] : "주문";
-    // 기존 결과에서 해당 라인 제거
     const remain = growResult.filter(x=>x!==line);
-    // 같은 kind 재추가
-const again = suggestGrowth({
-  klass: String(growClass),
-  sub: growSub==="-" ? "" : growSub,
-  level: growLevel,
-  count: 1,
-  subraceKo,
-  exclude: next,
+    const again = suggestGrowth({
+      klass: String(growClass),
+      sub: growSub==="-" ? "" : growSub,
+      level: growLevel,
+      count: 1,
+      subraceKo,
+      exclude: next,
     }).find(x=>x.startsWith(kind+":")) || null;
     setGrowResult(again? [...remain, again] : remain);
   }
