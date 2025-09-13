@@ -324,6 +324,20 @@ const RANGER_SPELLS = {
   2: ["나무껍질 피부","암시야","하급 회복","신출귀몰","독 보호","침묵","가시밭"],
   3: ["포화 소환","햇빛","번개 화살","식물 성장","에너지 보호"],
 };
+// ====== 팔라딘 주문 목록 ======
+const PALADIN_SPELLS = {
+  1: [
+    "선악 보호","신앙의 방패","명령","강제 결투","축복","영웅심",
+    "상처 치료","작열의 강타","천둥 강타","신성한 은총","분노의 강타",
+  ],
+  2: [
+    "지원","하급 회복","독 보호","낙인 강타","마법 무기",
+  ],
+  3: [
+    "저주 해제","활력의 감시자","성전사의 망토","햇빛","실명 강타","생환","원소 무기",
+  ],
+} as const;
+
 // 몽크 - 사원소의 길(특수 주문)
 const MONK_FE_SPELLS = {
   3: [
@@ -446,6 +460,12 @@ function maxSpellLevelByClass(klass: string, level: number): number {
       return 6;
     case "Ranger":
       return level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0;
+    case "Ranger":
+      return level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0;
+    // ★ Paladin: 5레벨에 2레벨 주문, 9레벨에 3레벨 주문
+    case "Paladin":
+      return level >= 9 ? 3 : level >= 5 ? 2 : 1;
+
     case "Fighter": // EK 전용
       return Math.min(3, Math.floor((level + 1) / 4));
     case "Rogue":  // AT 전용
@@ -526,6 +546,7 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
   }
   if (klass==="Wizard") return upTo(WIZARD_SPELLS, maxSpellLevelByClass(klass, level));
   if (klass==="Ranger") return upTo(RANGER_SPELLS, maxSpellLevelByClass(klass, level));
+  if (klass==="Paladin") return upTo(PALADIN_SPELLS, maxSpellLevelByClass(klass, level));
   if (klass==="Fighter" && sub==="비술 기사") return upTo(EK_SPELLS, maxSpellLevelByClass("Fighter", level));
   if (klass==="Rogue" && sub==="비전 괴도") return upTo(AT_SPELLS, maxSpellLevelByClass("Rogue", level));
   if (klass==="Monk" && sub==="사원소의 길") {
