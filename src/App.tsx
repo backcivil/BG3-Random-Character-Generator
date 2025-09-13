@@ -1413,7 +1413,7 @@ export default function App() {
               <div style={rowTight}>
                 <label style={label}>{T.bodyType}</label>
                 <div style={{ padding:"0 8px" }}>{bodyTypeLabel(bodyType)}</div>
-                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</button>
+                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</button>
                 <span style={{ ...nowrap, color:"#6b7280", marginLeft:8 }}>{L[lang].locks}</span>
                 <input type="checkbox" checked={lockBody} onChange={(e)=>setLockBody(e.target.checked)} style={{ height:CTRL_H }}/>
               </div>
