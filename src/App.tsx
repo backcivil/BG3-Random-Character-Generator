@@ -1363,26 +1363,47 @@ function excludeFeatItem(detailLine: string){
               </div>
 
               {/* 클래스 (한 줄 정리) */}
-              <div style={row}>
-                <label style={label}>{T.klass}</label>
-               <select
-  value={classKey}
-  onChange={(e:any)=>{
-    const k = e.target.value as keyof typeof CLASSES | "-";
-    setClassKey(k);
-    const sc = k==="-" ? "-" : CLASSES[k].subclasses[0];
-    setSubclassKo(sc);
-    if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
-    else setDeityKo("-");
-  }}
-  style={{...select, minWidth:200, maxWidth:220}}
->
+             <div style={row}>
+  <label style={label}>{T.klass}</label>
 
-                  {classKey==="-" ? <option value="-">-</option> : CLASSES[classKey].subclasses.map(s=><option key={s} value={s}>{s}</option>)}
-                </select>
-                <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-                <input type="checkbox"/>
-              </div>
+  {/* 클래스 선택 */}
+  <select
+    value={classKey}
+    onChange={(e:any)=>{
+      const k = e.target.value as keyof typeof CLASSES | "-";
+      setClassKey(k);
+      const sc = k==="-" ? "-" : CLASSES[k].subclasses[0];
+      setSubclassKo(sc);
+      // Cleric이면 신앙 갱신, 아니면 초기화
+      if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
+      else setDeityKo("-");
+    }}
+    style={{...select, minWidth:200, maxWidth:220}}
+  >
+    <option value="-">-</option>
+    {classOptions.map((k)=>(
+      <option key={k} value={k}>{lang==="ko" ? CLASSES[k].ko : k}</option>
+    ))}
+  </select>
+
+  {/* 서브클래스 선택 */}
+  <select
+    disabled={classKey==="-" }
+    value={subclassKo}
+    onChange={(e)=>setSubclassKo(e.target.value)}
+    style={{...select, minWidth:200, maxWidth:220}}
+  >
+    {classKey==="-" 
+      ? <option value="-">-</option>
+      : CLASSES[classKey].subclasses.map((s)=>(
+          <option key={s} value={s}>{s}</option>
+        ))
+    }
+  </select>
+
+  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+  <input type="checkbox"/>
+</div>
 
               {/* 출신 (한 줄 정리) */}
               <div style={row}>
