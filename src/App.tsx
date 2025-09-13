@@ -203,6 +203,10 @@ const WEAPON_KO: Record<(typeof ALL_WEAPONS_EN)[number],string> = { ...SIMPLE_KO
 const SHIELD_KO = "방패";
 const UNARMED_KO = "비무장 공격";
 
+/** Object.values 타입 확정 (unknown[] 방지) */
+const SIMPLE_ALL_KO = Object.values(SIMPLE_KO) as string[];
+const MARTIAL_ALL_KO = Object.values(MARTIAL_KO) as string[];
+
 const RACE_WEAP_KO: Record<string,string[]> = {
   인간:["언월도","미늘창","장창","창"],
   하프엘프:["언월도","미늘창","장창","창"],
@@ -212,41 +216,31 @@ const RACE_WEAP_KO: Record<string,string[]> = {
   드워프:["경량 망치","손도끼","전투 도끼","전쟁 망치"],
 };
 const RACE_SHIELD = new Set(["인간","하프엘프"]);
+
+/** ⚠️ 전부 라틴 KO 사용 */
 const CLASS_WEAP_KO: Record<string,string[]> = {
   드루이드:["곤봉","낫","단검","언월도","육척봉","투창","창","철퇴"],
-  몽크:Object.values(SIMPLE_KO).concat("소검"),
-  바드:Object.values(SIMPLE_KO).concat(["레이피어","소검","장검","손 쇠뇌"]),
-  로그:Object.values(SIMPLE_KО).concat(["레이피어","소검","장검","손 쇠뇌"]), // <- 오타 방지: SIMPLE_KO
+  몽크:[...SIMPLE_ALL_KO, "소검"],
+  바드:[...SIMPLE_ALL_KO, "레이피어","소검","장검","손 쇠뇌"],
+  로그:[...SIMPLE_ALL_KO, "레이피어","소검","장검","손 쇠뇌"],
   소서러:["단검","육척봉","경쇠뇌"],
   위저드:["단검","육척봉","경쇠뇌"],
-  워락:Object.values(SIMPLE_KО), // <- 오타 방지: SIMPLE_KO
-  클레릭:Object.values(SIMPLE_KО), // <- 오타 방지: SIMPLE_KO
-  레인저:Object.values(SIMPLE_KО).concat(Object.values(MARTIAL_KО)), // <- 오타 방지
-  바바리안:Object.values(SIMPLE_KО).concat(Object.values(MARTIAL_KО)),
-  팔라딘:Object.values(SIMPLE_KО).concat(Object.values(MARTIAL_KО)),
-  파이터:Object.values(SIMPLE_KО).concat(Object.values(MARTIAL_KО)),
+  워락:[...SIMPLE_ALL_KO],
+  클레릭:[...SIMPLE_ALL_KO],
+  레인저:[...SIMPLE_ALL_KO, ...MARTIAL_ALL_KO],
+  바바리안:[...SIMPLE_ALL_KO, ...MARTIAL_ALL_KO],
+  팔라딘:[...SIMPLE_ALL_KO, ...MARTIAL_ALL_KO],
+  파이터:[...SIMPLE_ALL_KO, ...MARTIAL_ALL_KO],
 };
-// ====== 오타 방지: KO 철자 강제 정정 ======
-// (혹시 편집기 자동교정/복붙 중 'KO'가 'KО(키릴)'로 바뀌면 에러가 나므로 여기서 보정)
-const SIMPLE_KO_FIX = SIMPLE_KO;
-const MARTIAL_KO_FIX = MARTIAL_KO;
-Object.assign(CLASS_WEAP_KO, {
-  로그: Object.values(SIMPLE_KO_FIX).concat(["레이피어","소검","장검","손 쇠뇌"]),
-  워락: Object.values(SIMPLE_KO_FIX),
-  클레릭: Object.values(SIMPLE_KO_FIX),
-  레인저: Object.values(SIMPLE_KO_FIX).concat(Object.values(MARTIAL_KO_FIX)),
-  바바리안: Object.values(SIMPLE_KO_FIX).concat(Object.values(MARTIAL_KO_FIX)),
-  팔라딘: Object.values(SIMPLE_KO_FIX).concat(Object.values(MARTIAL_KO_FIX)),
-  파이터: Object.values(SIMPLE_KО_FIX).concat(Object.values(MARTIAL_KО_FIX)),
-});
 
 // 서브클래스/권역 특수 무기 숙련
 const SUBCLASS_EXTRA_WEAPONS: Record<string,string[]> = {
-  "클레릭:폭풍 권역": Object.values(MARTIAL_KO),
-  "클레릭:전쟁 권역": Object.values(MARTIAL_KO),
-  "클레릭:죽음 권역": Object.values(MARTIAL_KO),
+  "클레릭:폭풍 권역": [...MARTIAL_ALL_KO],
+  "클레릭:전쟁 권역": [...MARTIAL_ALL_KO],
+  "클레릭:죽음 권역": [...MARTIAL_ALL_KO],
   "위저드:칼날 노래": ["단검","장검","레이피어","협도","소검","낫"],
 };
+
 
 // ====== 주문 풀(요약) : 패치8 포함 ======
 const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"];
@@ -455,7 +449,8 @@ function getClassSafe(k: keyof typeof CLASSES | "-"){ return k==="-" ? undefined
 /** ========= 무기/기술 계산 ========= */
 function getWeaponPoolKO(raceKoLabel: string, classKoLabel: string, subclass?: string): string[] {
   const racePool = RACE_WEAP_KO[raceKoLabel] || [];
-  const classPool = CLASS_WEAP_KО[classKoLabel] || []; // <- 주의: 아래 보정에서 KO로 맞춤
+  const classPool = CLASS_WEAP_KO[classKoLabel] || [];
+
   let pool = Array.from(new Set([...racePool, ...classPool]));
   if (classKoLabel === "몽크") pool = Array.from(new Set([...pool, UNARMED_KO]));
   const hasShield = (raceKoLabel && RACE_SHIELD.has(raceKoLabel)) || (classKoLabel && CLASS_SHIELD.has(classKoLabel));
