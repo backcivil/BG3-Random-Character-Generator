@@ -103,7 +103,7 @@ const L = {
     dicePH: "예: 1d4, 3d6+2",
     rollDice: "굴리기",
     vsTitle: "승자 정하기",
-    vsPH: "공백 또는 쉼표로 구분 (레드 유히 함마김 활잽이)",
+    vsPH: "공백 또는 쉼표로 구분 (예:민스크 부 아스타리온 카를라크)",
     vsRoll: "굴리기 (1d20)",
     winner: "승자",
     manualPanel: "수동 선택 & 고정",
