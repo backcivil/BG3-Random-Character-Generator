@@ -214,6 +214,10 @@ const MARTIAL_KO: Record<(typeof MARTIAL)[number],string> = {
 const ALL_WEAPONS_EN = [...SIMPLE, ...MARTIAL] as const;
 const WEAPON_KO: Record<(typeof ALL_WEAPONS_EN)[number],string> = { ...SIMPLE_KO, ...MARTIAL_KO };
 const SHIELD_KO = "방패";
+// 수동 선택용 KO 무기 전체 목록 (방패/비무장 포함)
+const ALL_WEAPONS_KO_LIST: string[] = Array.from(
+  new Set([...Object.values(WEAPON_KO), SHIELD_KO, "비무장 공격"])
+);
 
 const RACE_WEAP_KO: Record<string,string[]> = {
   인간:["언월도","미늘창","장창","창"],
@@ -1384,7 +1388,7 @@ function excludeFeatItem(detailLine: string){
           <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:360 }}>
             <h4 style={{ marginTop:0 }}>{T.weapons}</h4>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
-              {ALL_WEAPONS_KO_LIST.map(w=>(
+             {ALL_WEAPONS_KO_LIST.map((w: string)=>(
   <label key={w} style={{ display:"flex", gap:8, alignItems:"center" }}>
     <input
       type="checkbox"
@@ -1398,6 +1402,7 @@ function excludeFeatItem(detailLine: string){
     <span>{w}</span>
   </label>
 ))}
+
             </div>
             <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
               <button style={btnSecondary} onClick={()=>setShowWeaponPicker(false)}>{T.cancel}</button>
