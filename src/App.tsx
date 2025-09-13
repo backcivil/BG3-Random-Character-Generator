@@ -724,6 +724,83 @@ function rerollSameFeat(id: FeatId, excluded: Set<string>, lang: Lang){
   const r = featRollCore(id, lang, excluded);
   return { id, name: r.name, lines: r.lines };
 }
+  // ===== 단일 항목만 재굴림 헬퍼 추가 =====
+function rollSingleForFeat(
+  id: FeatId,
+  lang: Lang,
+  excluded: Set<string>,
+  kind: string,                  // "소마법" | "1레벨 주문" | "전투 기법" | "기술 숙련" | "의식 주문" | "무기 숙련" | "능력 +1"
+  existingValues: Set<string>,   // 같은 kind의 이미 선택된 값들(중복 방지)
+): string | null {
+  // 공통 유틸
+  const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
+
+  // 마법 입문 전용 풀 가져오기
+  const getMI = (base: string) =>
+    (base==="Bard"?BARD_SPELLS: base==="Cleric"?CLERIC_SPELLS: base==="Druid"?DRUID_SPELLS:
+     base==="Sorcerer"?SORCERER_SPELLS: base==="Warlock"?WARLOCK_BASE: WIZARD_SPELLS);
+
+  // 후보군 필터 함수
+  const pickOne = (arr: string[], label: string) => {
+    const pool = arr.filter(x=>!excluded.has(x) && !existingValues.has(x));
+    if (pool.length===0) return null;
+    return `${label}: ${choice(pool)}`;
+  };
+
+  // ===== 분기 =====
+  if (id.startsWith("MagicInitiate:")) {
+    const base = id.split(":")[1];
+    const src = getMI(base);
+    if (kind.startsWith("소마법")) {
+      return pickOne((src[0]||[]), "소마법");
+    }
+    if (kind.startsWith("1레벨 주문")) {
+      return pickOne((src[1]||[]), "1레벨 주문");
+    }
+    return null;
+  }
+
+  if (id==="MartialAdept" && kind.startsWith("전투 기법")) {
+    return pickOne(BM_MANEUVERS, "전투 기법");
+  }
+
+  if (id==="RitualCaster" && kind.startsWith("의식 주문")) {
+    return pickOne(["망자와 대화","소환수 찾기","활보","도약 강화","변장","동물과 대화"], "의식 주문");
+  }
+
+  if (id==="Skilled" && kind.startsWith("기술 숙련")) {
+    const all = Object.keys(SK.KO) as SkillKey[];
+    return pickOne(all.map(skillDisp), "기술 숙련");
+  }
+
+  if (id==="WeaponMaster") {
+    if (kind.startsWith("무기 숙련")) {
+      const all = Array.from(new Set(Object.values(WEAPON_KO)));
+      return pickOne(all, "무기 숙련");
+    }
+    if (kind.startsWith("능력 +1")) {
+      const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
+      const pool = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a);
+      return pickOne(pool, "능력 +1");
+    }
+  }
+
+  if (
+    (id==="Athlete" || id==="LightlyArmoured" || id==="HeavilyArmoured" ||
+     id==="MediumArmourMaster" || id==="ModeratelyArmoured" || id==="HeavyArmourMaster" ||
+     id==="TavernBrawler") && kind.startsWith("능력 +1")
+  ) {
+    const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
+    const base = (id==="TavernBrawler") ? ["STR","CON"] : ["STR","DEX"];
+    const pool = base.map(a=>lang==="ko"?abilKoMap[a]:a);
+    return pickOne(pool, "능력 +1");
+  }
+
+  // 나머지(단일 항목만 있는 재주)는 통짜 재굴림으로 처리해도 체감상 동일
+  return null;
+}
+// ===== 단일 항목만 재굴림 헬퍼 끝 =====
+
 
 /** ========= 스타일 ========= */
 const btn = { padding:"8px 12px", border:"1px solid #e5e7eb", borderRadius:10, background:"#f8fafc", cursor:"pointer" } as const;
@@ -991,18 +1068,42 @@ export default function App() {
     setFeatName(r.name);
     setFeatDetails(r.lines);
   }
-  function excludeFeatItem(line: string){
-    const val = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
-    const next = new Set(featExcluded); next.add(val);
-    setFeatExcluded(next);
-    if (featId){
-      const r = rerollSameFeat(featId, next, lang);
-      setFeatName(r.name);
-      setFeatDetails(r.lines);
-    } else {
-      rollFeatBtn();
-    }
+ // ===== App() 내부: excludeFeatItem 교체 =====
+function excludeFeatItem(line: string){
+  // line 형태: `${featName}: ${d}`  → d만 뽑아낸 뒤 kind / value 분리
+  const afterFeat = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim(); // "소마법: 화염살"
+  const [kindRaw, ...rest] = afterFeat.split(":");
+  const kind = (kindRaw || "").trim();                         // 예) "소마법"
+  const value = rest.join(":").trim();                         // 예) "화염살"
+
+  // 제외 목록에 value만 저장 (아이템 단위)
+  const nextExcluded = new Set(featExcluded); nextExcluded.add(value);
+  setFeatExcluded(nextExcluded);
+
+  // 현재 라인 제거
+  const idx = featDetails.findIndex(x => x === afterFeat);
+  const nextLines = [...featDetails];
+  if (idx >= 0) nextLines.splice(idx, 1);
+
+  // 같은 kind로 이미 선택된 값들 (중복 방지)
+  const existingOfKind = new Set(
+    nextLines
+      .filter(l => l.startsWith(kind + ":"))
+      .map(l => l.split(":").slice(1).join(":").trim())
+  );
+
+  // 해당 항목만 재굴림 시도
+  if (featId) {
+    const single = rollSingleForFeat(featId, lang, nextExcluded, kind, existingOfKind);
+    if (single) nextLines.splice(Math.max(idx, 0), 0, single);
+    setFeatDetails(nextLines);
+  } else {
+    // 혹시 featId가 비어있다면 통짜 재굴림
+    rollFeatBtn();
   }
+}
+// ===== excludeFeatItem 교체 끝 =====
+
   function unexcludeFeatItem(val: string){
     const next = new Set(featExcluded); next.delete(val);
     setFeatExcluded(next);
