@@ -886,7 +886,7 @@ export default function App() {
   }
 
   /** ===== 성장 추천 ===== */
-  function doSuggestGrowth(){
+ function doSuggestGrowth(){
   if (growClass==="-" || growLevel<1) { setGrowResult([]); return; }
   const klass = String(growClass);
   const sub = growSub==="-" ? "" : growSub;
@@ -901,6 +901,7 @@ export default function App() {
   setGrowResult(list);
 }
 
+
   function excludeGrowthItem(line: string){
     // "라벨: 값"에서 값만 추출하여 제외
     const val = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
@@ -912,8 +913,11 @@ export default function App() {
     const remain = growResult.filter(x=>x!==line);
     // 같은 kind 재추가
 const again = suggestGrowth({
-  klass:String(growClass), sub:growSub==="-"?"":growSub, level:growLevel,
-  count:1, raceKo: raceKey==="-"?"":RACES[raceKey].ko, subraceKo,
+  klass: String(growClass),
+  sub: growSub==="-" ? "" : growSub,
+  level: growLevel,
+  count: 1,
+  subraceKo,
   exclude: next,
     }).find(x=>x.startsWith(kind+":")) || null;
     setGrowResult(again? [...remain, again] : remain);
