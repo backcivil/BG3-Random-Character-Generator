@@ -650,12 +650,57 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
   const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
 
   switch(id){
-    case "AbilityImprovements": {
-      // 그대로 한 줄 (요청 대상 아님)
-      const picks = sampleN(["STR","DEX","CON","INT","WIS","CHA"], 2);
-      lines.push(`능력 +2: ${lang==="ko"?picks.map(a=>abilKoMap[a]).join(", "):picks.join(", ")}`);
-      break;
+    // featRollCore 내부의
+// case "AbilityImprovements" 분기만 교체
+case "AbilityImprovements": {
+  // 50% 확률로 같은 능력치 두 번(+1+1), 50%는 서로 다른 두 능력치(+1+1)
+  const abilAll = ["STR","DEX","CON","INT","WIS","CHA"] as const;
+  const labelOf = (a: string) => (lang==="ko" ? abilKoMap[a as keyof typeof abilKoMap] : a);
+
+  const doubleSame = Math.random() < 0.5;
+
+  if (doubleSame) {
+    // 같은 능력치 두 번 (예: 힘, 힘)
+    const a = choice(abilAll);
+    const lbl = labelOf(a);
+    // 제외 목록에 이 라벨이 있다면 대체 가능할 때까지 재굴림
+    let guard = 100;
+    while (guard-- > 0 && excluded.has(lbl)) {
+      const cand = choice(abilAll); 
+      if (!excluded.has(labelOf(cand))) { 
+        // 교체
+        const lbl2 = labelOf(cand);
+        // 최종 확정
+        lines.push(`능력 +1: ${lbl2}`);
+        lines.push(`능력 +1: ${lbl2}`);
+        break;
+      }
     }
+    if (lines.length === 0) {
+      // 정상 루트: 제외에 걸리지 않았을 때
+      lines.push(`능력 +1: ${lbl}`);
+      lines.push(`능력 +1: ${lbl}`);
+    }
+  } else {
+    // 서로 다른 두 능력치
+    const [a, b] = sampleN(abilAll, 2);
+    const la = labelOf(a), lb = labelOf(b);
+    // 제외 적용: 걸리면 대체
+    const picks: string[] = [];
+    const pool = abilAll.map(x => labelOf(x)).filter(lbl => !excluded.has(lbl));
+
+    const pickOne = () => pool.length ? choice(pool) : (lang==="ko" ? "힘" : "STR");
+    const pa = excluded.has(la) ? pickOne() : la;
+    // b가 a와 같아지지 않도록 보장
+    const pool2 = pool.filter(lbl => lbl !== pa);
+    const pb = excluded.has(lb) ? (pool2.length ? choice(pool2) : pickOne()) : lb;
+
+    lines.push(`능력 +1: ${pa}`);
+    lines.push(`능력 +1: ${pb}`);
+  }
+  break;
+}
+
 
     // 능력 +1 계열 (단일 항목)
     case "Athlete":
