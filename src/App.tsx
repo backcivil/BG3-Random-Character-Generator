@@ -605,26 +605,35 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
     return full;
   }
 
-  if (klass==="Warlock") {
-    const base = upTo(WARLOCK_BASE, maxSpellLevelByClass(klass, level));
-    const exp = WARLOCK_EXP[sub] || {};
-    for (const gate of Object.keys(exp).map(Number).sort((a,b)=>a-b)) {
+    if (klass==="Warlock") {
+    // 타입 단언으로 upTo 인자/exp 형태를 명확히
+    const base = upTo(WARLOCK_BASE as Record<number,string[]>, maxSpellLevelByClass(klass, level));
+    const exp: Record<number,string[]> = (WARLOCK_EXP as Record<string, Record<number,string[]>>)[sub] ?? {};
+
+    // Number 콜백은 화살표 함수로 바꿔서 오버로드 경고 차단
+    for (const gate of Object.keys(exp).map((k)=>Number(k)).sort((a,b)=>a-b)) {
       if (level >= gate) {
-        for (const s of exp[gate]) {
-          let sl = HEXBLADE_LEVELS[s as keyof typeof HEXBLADE_LEVELS] || 4 as 1|2|3|4|5;
-          if (!HEXBLADE_LEVELS[s as keyof typeof HEXBLADE_LEVELS]) {
-            if (WARLOCK_BASE[1]?.includes(s)) sl=1;
-            else if (WARLOCK_BASE[2]?.includes(s)) sl=2;
-            else if (WARLOCK_BASE[3]?.includes(s)) sl=3;
-            else if (WARLOCK_BASE[4]?.includes(s)) sl=4;
-            else if (WARLOCK_BASE[5]?.includes(s)) sl=5;
+        const gained = exp[gate] ?? [];
+        for (const s of gained) {
+          // 주술 칼날(확장 주문) → 안전한 레벨 매핑
+          let sl = (HEXBLADE_LEVELS as Record<string,1|2|3|4|5>)[s] ?? (4 as 1|2|3|4|5);
+
+          // 혹시 매핑이 없으면 기본 워락 목록에서 레벨 추론 (옵셔널체이닝 대신 안전 배열)
+          if (!(HEXBLADE_LEVELS as any)[s]) {
+            if ((WARLOCK_BASE[1] || []).includes(s)) sl = 1;
+            else if ((WARLOCK_BASE[2] || []).includes(s)) sl = 2;
+            else if ((WARLOCK_BASE[3] || []).includes(s)) sl = 3;
+            else if ((WARLOCK_BASE[4] || []).includes(s)) sl = 4;
+            else if ((WARLOCK_BASE[5] || []).includes(s)) sl = 5;
           }
-          base[sl] = uniq([...(base[sl]||[]), s]);
+
+          base[sl] = uniq([...(base[sl] || []), s]);
         }
       }
     }
     return base;
   }
+
 
   return {};
 }
@@ -1202,7 +1211,6 @@ export default function App() {
   /** ===== 옵션 데이터 ===== */
   const raceOptions = Object.keys(RACES) as (keyof typeof RACES)[];
   const classOptions = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-  const allSkills = Object.keys(SK.KO) as SkillKey[];
 
   // 종족 바뀌어 허용 신체유형 축소 시 보정
   useEffect(()=>{
