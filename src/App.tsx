@@ -605,34 +605,46 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
     return full;
   }
 
-    if (klass==="Warlock") {
-    // 타입 단언으로 upTo 인자/exp 형태를 명확히
-    const base = upTo(WARLOCK_BASE as Record<number,string[]>, maxSpellLevelByClass(klass, level));
-    const exp: Record<number,string[]> = (WARLOCK_EXP as Record<string, Record<number,string[]>>)[sub] ?? {};
+   if (klass==="Warlock") {
+  // base: 기본 워락 주문(레벨 상한까지)
+  const base = upTo(WARLOCK_BASE as Record<number,string[]>, maxSpellLevelByClass(klass, level));
 
-    // Number 콜백은 화살표 함수로 바꿔서 오버로드 경고 차단
-    for (const gate of Object.keys(exp).map((k)=>Number(k)).sort((a,b)=>a-b)) {
-      if (level >= gate) {
-        const gained = exp[gate] ?? [];
-        for (const s of gained) {
-          // 주술 칼날(확장 주문) → 안전한 레벨 매핑
-          let sl = (HEXBLADE_LEVELS as Record<string,1|2|3|4|5>)[s] ?? (4 as 1|2|3|4|5);
+  // 서브클래스 확장 주문 맵
+  const expMap: Record<number,string[]> =
+    ((WARLOCK_EXP as Record<string, Record<number,string[]>>)[sub]) || {};
 
-          // 혹시 매핑이 없으면 기본 워락 목록에서 레벨 추론 (옵셔널체이닝 대신 안전 배열)
-          if (!(HEXBLADE_LEVELS as any)[s]) {
-            if ((WARLOCK_BASE[1] || []).includes(s)) sl = 1;
-            else if ((WARLOCK_BASE[2] || []).includes(s)) sl = 2;
-            else if ((WARLOCK_BASE[3] || []).includes(s)) sl = 3;
-            else if ((WARLOCK_BASE[4] || []).includes(s)) sl = 4;
-            else if ((WARLOCK_BASE[5] || []).includes(s)) sl = 5;
-          }
+  // 게이트(레벨) 키를 문자열로 받고 숫자 변환 + 정렬
+  const gateKeys = Object.keys(expMap);
+  gateKeys.sort((a,b)=>Number(a)-Number(b));
 
-          base[sl] = uniq([...(base[sl] || []), s]);
-        }
+  for (let i=0; i<gateKeys.length; i++){
+    const gate = Number(gateKeys[i]);
+    if (Number.isNaN(gate) || level < gate) continue;
+
+    const gained = expMap[gate] || [];
+    for (let j=0; j<gained.length; j++){
+      const s = gained[j];
+
+      // 주술 칼날 전용 매핑 우선
+      let sl: 1|2|3|4|5 = ((HEXBLADE_LEVELS as Record<string,1|2|3|4|5>)[s]) ?? 4;
+
+      // 매핑이 없으면 기본 워락 풀에서 레벨 추론 (indexOf 사용: 구버전 lib에서도 안전)
+      if (!((HEXBLADE_LEVELS as Record<string,1|2|3|4|5>)[s])) {
+        if ((WARLOCK_BASE[1] || []).indexOf(s) >= 0) sl = 1;
+        else if ((WARLOCK_BASE[2] || []).indexOf(s) >= 0) sl = 2;
+        else if ((WARLOCK_BASE[3] || []).indexOf(s) >= 0) sl = 3;
+        else if ((WARLOCK_BASE[4] || []).indexOf(s) >= 0) sl = 4;
+        else if ((WARLOCK_BASE[5] || []).indexOf(s) >= 0) sl = 5;
       }
+
+      // 중복 없이 합치기
+      const prev = base[sl] || [];
+      base[sl] = Array.from(new Set([...prev, s]));
     }
-    return base;
   }
+
+  return base;
+}
 
 
   return {};
