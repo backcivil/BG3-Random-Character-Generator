@@ -943,22 +943,42 @@ export default function App() {
     setBodyType(choice(cand));
   }
 
-  function recomputeWeaponsProficient() {
-    const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
-    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-    const pool = getWeaponPoolKO(raceKoLabel, classKoLabel, subclassKo !== "-" ? subclassKo : undefined);
-    if (pool.length === 0) {
-      const base2 = randomAny2KO();
-      const merged = mergeWeaponsWithLocks(weaponsKO, base2, lockWeapons1, lockWeapons2, 2);
-      setWeaponsKO(merged);
-      if (merged.length < 2) setLockWeapons2(false);
-      return;
-    }
-    const targetN = decideWeaponCountByPool(pool);
-    const merged = mergeWeaponsWithLocks(weaponsKO, pool, lockWeapons1, lockWeapons2, targetN);
-    setWeaponsKO(merged);
-    if (merged.length < 2) setLockWeapons2(false);
-  }
+ function recomputeWeaponsProficient() {
+  const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
+  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const pool = getWeaponPoolKO(
+    raceKoLabel,
+    classKoLabel,
+    subclassKo !== "-" ? subclassKo : undefined
+  );
+
+  // 잠금 중인 슬롯 수 계산 (실제 값이 있을 때만 카운트)
+  const lockedCount =
+    (lockWeapons1 && weaponsKO[0] ? 1 : 0) +
+    (lockWeapons2 && weaponsKO[1] ? 1 : 0);
+
+  // 기본 목표 개수(클래스/종족 풀 기준). 풀이 비면 임의 2개.
+  const baseTarget = pool.length === 0 ? 2 : decideWeaponCountByPool(pool);
+
+  // 잠금 개수보다 작게 내려가지 않도록 보정
+  const targetN = Math.max(baseTarget, lockedCount) as 1 | 2;
+
+  // 풀이 비면 임의 2개 풀로 대체 (방패/비무장 제외 Any)
+  const freshPool = pool.length === 0 ? randomAny2KO() : pool;
+
+  // 잠금 반영 병합 (잠긴 값은 무조건 유지)
+  const merged = mergeWeaponsWithLocks(
+    weaponsKO,
+    freshPool,
+    lockWeapons1,
+    lockWeapons2,
+    targetN
+  );
+
+  setWeaponsKO(merged);
+  // ❌ 자동 해제 금지: merged.length < 2 여도 setLockWeapons2(false) 하지 않음
+}
+
   function recomputeWeaponsAny() {
     const base2 = randomAny2KO();
     const merged = mergeWeaponsWithLocks(weaponsKO, base2, lockWeapons1, lockWeapons2, 2);
