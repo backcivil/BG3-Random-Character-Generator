@@ -637,6 +637,79 @@ const FEATS_ALL: { id: FeatId; ko: string; en: string }[] = [
   {id:"WarCaster", ko:"전쟁 시전자", en:"War Caster"},
   {id:"WeaponMaster", ko:"무기의 달인", en:"Weapon Master"},
 ];
+// ==== 재주 줄-단위 리롤 유틸 ====
+// "원소 숙련: 산성" -> "산성" 처럼 꼬리값만 추출
+function extractTail(line: string): string {
+  return line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
+}
+
+// 주문 저격수/원소 숙련 등 "1줄짜리 선택" 재주에서,
+// 해당 줄만 다른 값으로 교체 리롤
+function rerollFeatLine(
+  featId: FeatId,
+  line: string,
+  excluded: Set<string>,
+  lang: Lang
+): string | null {
+  const tail = extractTail(line);
+  const prefix = line.split(":")[0];
+
+  // 공용: 능력 라벨 변환
+  const abilKoMap: Record<string,string> = { STR:"힘", DEX:"민첩", CON:"건강", INT:"지능", WIS:"지혜", CHA:"매력" };
+  const labelOf = (a: string) => (lang==="ko" ? (abilKoMap[a] ?? a) : a);
+
+  // 주문 저격수
+  if (featId === "SpellSniper" && prefix.startsWith("주문")) {
+    const base = ["뼛속 냉기","섬뜩한 파동","화염살","서리 광선","전격의 손아귀","가시 채찍"];
+    const pool = base.filter(x => x !== tail && !excluded.has(x));
+    if (pool.length === 0) return null; // 남은게 없으면 상위 풀리롤로 위임
+    return `주문: ${choice(pool)}`;
+  }
+
+  // 원소 숙련
+  if (featId === "ElementalAdept" && prefix.startsWith("원소 숙련")) {
+    const base = ["산성","냉기","화염","번개","천둥"];
+    const pool = base.filter(x => x !== tail && !excluded.has(x));
+    if (pool.length === 0) return null;
+    return `원소 숙련: ${choice(pool)}`;
+  }
+
+  // Athlete / Armoured 류(+1) — 한 줄만 리롤
+  if (
+    ["Athlete","LightlyArmoured","HeavilyArmoured","MediumArmourMaster","ModeratelyArmoured","HeavyArmourMaster","TavernBrawler"].includes(featId)
+    && prefix.startsWith("능력 +1")
+  ) {
+    const baseAbils = ["STR","DEX","CON","INT","WIS","CHA"];
+    // 해당 재주별 허용 능력치 제한
+    let allow = baseAbils;
+    if (["Athlete","LightlyArmoured","HeavilyArmoured","MediumArmourMaster","ModeratelyArmoured","HeavyArmourMaster","TavernBrawler"].includes(featId)) {
+      allow = featId==="TavernBrawler" ? ["STR","CON"] :
+              ["Athlete","LightlyArmoured","HeavilyArmoured","MediumArmourMaster","ModeratelyArmoured","HeavyArmourMaster"].includes(featId)
+                ? ["STR","DEX"]
+                : baseAbils;
+    }
+    // 제외/현재 선택 제거
+    const pool = allow
+      .map(a => labelOf(a))
+      .filter(lbl => lbl !== tail && !excluded.has(lbl));
+    if (pool.length === 0) return null;
+    return `능력 +1: ${choice(pool)}`;
+  }
+
+  // Resilient(저항력: 능력 1개) — 한 줄 리롤
+  if (featId === "Resilient" && prefix.startsWith("저항력")) {
+    const base = ["근력","민첩","건강","지능","지혜","매력"];
+    const pool = base.filter(x => x !== tail && !excluded.has(x));
+    if (pool.length === 0) return null;
+    return `저항력: ${choice(pool)}`;
+  }
+
+  // Ritual Caster(의식 주문), Skilled(기술 숙련) 등 다줄형은
+  // 이미 줄-분할되어 있다면 동일 프리픽스로 교체 로직을 추가하면 됨.
+  // (현재 정상 동작 중이라면 여기선 패스)
+
+  return null;
+}
 
 // 재주 옵션 생성기
 // ===== 여기부터 featRollCore 교체 =====
@@ -650,7 +723,6 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
   const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
 
   switch(id){
-    // featRollCore 내부의
 // case "AbilityImprovements" 분기만 교체
 case "AbilityImprovements": {
   // 50% 확률로 같은 능력치 두 번(+1+1), 50%는 서로 다른 두 능력치(+1+1)
@@ -899,53 +971,42 @@ function suggestGrowth(params: {
   const out: string[] = [];
   const already = new Set<string>(); // 같은 레벨 한 번의 추천에서 중복 방지
 
- // Fighter
-if (klass==="Fighter") {
-  // 1레벨: 전투 방식 1개
-  if (level===1) {
-    const styles = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x));
-    if (styles.length) out.push(`전투 방식: ${choice(styles)}`);
+// Fighter
+if (klass === "Fighter") {
+  // 1레벨: 전투 방식
+  if (level === 1) {
+    out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
   }
 
-  // 전투의 대가(Battle Master)
-  if (sub==="전투의 대가") {
-    const basePool = BM_MANEUVERS.filter(x=>!exclude.has(x));
+  // 전투의 대가: 전투 기법 선택
+  if (sub === "전투의 대가") {
+    const pool = BM_MANEUVERS.filter(x => !exclude.has(x));
 
-    if (level===3) {
-      // 3레벨: 전투 기법 3개 (중복 금지)
-      const picks = sampleN(basePool, 3);
-      for (const p of picks) out.push(`전투 기법: ${p}`);
+    if (level === 3) {
+      const three = sampleN(pool, 3);
+      for (const m of three) out.push(`전투 기법: ${m}`);
     }
-
-    if (level===7 || level===10) {
-      // 7/10레벨: 전투 기법 2개 (같은 추천 내 중복 금지)
-      const already = new Set(
-        out.filter(s=>s.startsWith("전투 기법: "))
-           .map(s=>s.slice("전투 기법: ".length))
-      );
-      const pool = basePool.filter(x=>!already.has(x));
-      const picks = sampleN(pool, 2);
-      for (const p of picks) out.push(`전투 기법: ${p}`);
+    if (level === 7 || level === 10) {
+      const two = sampleN(pool, 2);
+      for (const m of two) out.push(`전투 기법: ${m}`);
     }
   }
 
-  // 투사(Champion): 10레벨 전투 방식 추가 1개
-  if (sub==="투사" && level===10) {
-    const styles = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x));
-    if (styles.length) out.push(`전투 방식: ${choice(styles)}`);
+  // 투사: 10레벨에 전투 방식 하나 더
+  if (sub === "투사" && level === 10) {
+    out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
   }
 
-  // 비전 궁수(Eldritch Archer) — 기존 유지
-  if (sub==="비전 궁수") {
-    if (level===3) {
-      const cantrips = ["인도","빛","진실의 일격"].filter(x=>!exclude.has(x));
-      if (cantrips.length) out.push(`주문: ${choice(cantrips)}`);
-      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+  // 비전 궁수
+  if (sub === "비전 궁수") {
+    if (level === 3) {
+      out.push(`주문: ${choice(["인도","빛","진실의 일격"].filter(x=>!exclude.has(x)))}`);
+      const shots3 = sampleN(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)), 3);
+      for (const s of shots3) out.push(`비전 사격: ${s}`);
     }
-    if (level===7 || level===10) {
-      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+    if (level === 7 || level === 10) {
+      const shots2 = sampleN(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)), 2);
+      for (const s of shots2) out.push(`비전 사격: ${s}`);
     }
   }
 }
@@ -1057,6 +1118,13 @@ export default function App() {
   const [featName, setFeatName] = useState<string>("");
   const [featDetails, setFeatDetails] = useState<string[]>([]);
   const [featExcluded, setFeatExcluded] = useState<Set<string>>(new Set());
+// 선택지(하위 옵션) 없는 재주 → [제외] 버튼 숨김
+const NO_SUBOPTION_FEATS = new Set<FeatId>([
+  "CrossbowExpert","GreatWeaponMaster","Lucky","Mobile","Sharpshooter","Sentinel",
+  "ShieldMaster","Tough","WarCaster","Actor","Alert","Charger","DungeonDelver",
+  "Durable","MageSlayer","Performer","PolearmMaster"
+]);
+
 
   // 선택 픽커
   const [showWeaponPicker, setShowWeaponPicker] = useState(false);
@@ -1207,11 +1275,33 @@ export default function App() {
     setFeatDetails(r.lines);
   }
  // ===== App() 내부: excludeFeatItem 교체 =====
-function excludeFeatItem(detailLine: string){
-  // detailLine 예: "소마법: 신성한 불길" | "1레벨 주문: 신앙의 방패" | "기술 숙련: 통찰" ...
-  const [kindRaw, ...rest] = detailLine.split(":");
-  const kind = (kindRaw || "").trim();           // "소마법", "1레벨 주문", "기술 숙련", "무기 숙련", "능력 +1", "의식 주문", "전투 기법" 등
-  const value = rest.join(":").trim() || kind;   // "신성한 불길" 등
+function excludeFeatItem(line: string){
+  // 1) 클릭한 항목만 제외 집합에 추가
+  const val = extractTail(line);
+  const next = new Set(featExcluded); 
+  next.add(val);
+  setFeatExcluded(next);
+
+  // 2) 재주가 정해져 있지 않으면 전체 리롤
+  if (!featId) { 
+    rollFeatBtn();
+    return;
+  }
+
+  // 3) 같은 재주 안에서 "그 줄만" 리롤 시도
+  const replaced = rerollFeatLine(featId, line, next, lang);
+
+  if (replaced) {
+    // 3-a) 성공: 해당 줄만 교체
+    setFeatDetails(prev => prev.map(x => x === line ? replaced : x));
+  } else {
+    // 3-b) 실패: (후보가 0개 등) 같은 재주의 전체 옵션을 다시 굴림
+    const r = rerollSameFeat(featId, next, lang);
+    setFeatName(r.name);
+    setFeatDetails(r.lines);
+  }
+}
+
 
   // 1) 제외 목록에 '아이템'만 추가
   const nextExcluded = new Set(featExcluded); 
@@ -1340,25 +1430,33 @@ function excludeFeatItem(detailLine: string){
                 {featName && <div style={{ fontWeight:700 }}>{featName}</div>}
               </div>
               {featDetails.length>0 && (
-                <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
-                  {featDetails.map((d,i)=>(
-                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <span>• {d}</span>
-                      <button style={btnSecondary} onClick={()=>excludeFeatItem(d)}>{T.exclude}</button>
-                    </div>
-                  ))}
-                  {Array.from(featExcluded).length>0 && (
-                    <div style={{ marginTop:6 }}>
-                      <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
-                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                        {Array.from(featExcluded).map(x=>(
-                          <button key={x} style={btnSecondary} onClick={()=>unexcludeFeatItem(x)}>{T.clear}: {x}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+  <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
+    {featDetails.map((d,i)=>(
+      <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <span>• {d}</span>
+        {featId && !NO_SUBOPTION_FEATS.has(featId) && (
+          <button style={btnSecondary} onClick={()=>excludeFeatItem(d)}>
+            {T.exclude}
+          </button>
+        )}
+      </div>
+    ))}
+
+    {Array.from(featExcluded).length>0 && (
+      <div style={{ marginTop:6 }}>
+        <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {Array.from(featExcluded).map(x=>(
+            <button key={x} style={btnSecondary} onClick={()=>unexcludeFeatItem(x)}>
+              {T.clear}: {x}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
             </section>
 
             {/* 주사위 */}
