@@ -854,21 +854,57 @@ function suggestGrowth(params: {
   const out: string[] = [];
   const already = new Set<string>(); // 같은 레벨 한 번의 추천에서 중복 방지
 
-  // Fighter
-  if (klass==="Fighter") {
-    if (level===1) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-    if (sub==="전투의 대가" && [3,7,10].includes(level)) out.push(`전투 기법: ${choice(BM_MANEUVERS.filter(x=>!exclude.has(x)))}`);
-    if (sub==="투사" && level===10) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-    if (sub==="비전 궁수") {
-      if (level===3) {
-        out.push(`주문: ${choice(["인도","빛","진실의 일격"].filter(x=>!exclude.has(x)))}`);
-        out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-        out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-        out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-      }
-      if (level===7 || level===10) out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+ // Fighter
+if (klass==="Fighter") {
+  // 1레벨: 전투 방식 1개
+  if (level===1) {
+    const styles = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x));
+    if (styles.length) out.push(`전투 방식: ${choice(styles)}`);
+  }
+
+  // 전투의 대가(Battle Master)
+  if (sub==="전투의 대가") {
+    const basePool = BM_MANEUVERS.filter(x=>!exclude.has(x));
+
+    if (level===3) {
+      // 3레벨: 전투 기법 3개 (중복 금지)
+      const picks = sampleN(basePool, 3);
+      for (const p of picks) out.push(`전투 기법: ${p}`);
+    }
+
+    if (level===7 || level===10) {
+      // 7/10레벨: 전투 기법 2개 (같은 추천 내 중복 금지)
+      const already = new Set(
+        out.filter(s=>s.startsWith("전투 기법: "))
+           .map(s=>s.slice("전투 기법: ".length))
+      );
+      const pool = basePool.filter(x=>!already.has(x));
+      const picks = sampleN(pool, 2);
+      for (const p of picks) out.push(`전투 기법: ${p}`);
     }
   }
+
+  // 투사(Champion): 10레벨 전투 방식 추가 1개
+  if (sub==="투사" && level===10) {
+    const styles = ["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x));
+    if (styles.length) out.push(`전투 방식: ${choice(styles)}`);
+  }
+
+  // 비전 궁수(Eldritch Archer) — 기존 유지
+  if (sub==="비전 궁수") {
+    if (level===3) {
+      const cantrips = ["인도","빛","진실의 일격"].filter(x=>!exclude.has(x));
+      if (cantrips.length) out.push(`주문: ${choice(cantrips)}`);
+      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+    }
+    if (level===7 || level===10) {
+      out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+    }
+  }
+}
+
 
   // Barbarian — 야생의 심장: 3~12 계속 교체 가능
   if (klass==="Barbarian" && sub==="야생의 심장" && level>=3) {
