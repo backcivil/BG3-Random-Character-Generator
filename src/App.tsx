@@ -855,7 +855,6 @@ export default function App() {
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
   function rollWeaponsBtn() {
-    const raceKo = raceKey === "-" ? "" : RACES[raceKey].ko;
     const picks = computeWeapons(raceKo, classKey === "-" ? "" : CLASSES[classKey].ko, subclassKo);
     setWeaponsKO(picks);
   }
@@ -886,20 +885,23 @@ export default function App() {
   }
 
   /** ===== 성장 추천 ===== */
- function doSuggestGrowth(){
-  if (growClass==="-" || growLevel<1) { setGrowResult([]); return; }
-  const klass = String(growClass);
-  const sub = growSub==="-" ? "" : growSub;
-  const level = growLevel;
-  const subrace = subraceKo;
-
+ // === 성장 추천 실행 ===
+function doSuggestGrowth() {
+  if (growClass === "-" || growLevel < 1) {
+    setGrowResult([]);
+    return;
+  }
   const list = suggestGrowth({
-    klass, sub, level, count: growSpellCount,
-    subraceKo: subrace,
+    klass: String(growClass),
+    sub: growSub === "-" ? "" : growSub,
+    level: growLevel,
+    count: growSpellCount,
+    subraceKo,            // 상태값 그대로 사용
     exclude: growExcluded,
   });
   setGrowResult(list);
 }
+
 
 
   function excludeGrowthItem(line: string){
