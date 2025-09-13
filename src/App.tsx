@@ -826,14 +826,16 @@ function rollSingleForFeat(
 
 
 /** ========= 스타일 ========= */
-const btn = { padding:"8px 12px", border:"1px solid #e5e7eb", borderRadius:10, background:"#f8fafc", cursor:"pointer" } as const;
+// 컴팩트 UI
+const btn = { padding:"4px 8px", border:"1px solid #e5e7eb", borderRadius:8, background:"#f8fafc", cursor:"pointer", lineHeight:1.2, display:"inline-flex", alignItems:"center", gap:6 } as const;
 const btnPrimary = { ...btn, background:"#111827", color:"#fff", borderColor:"#111827" } as const;
 const btnSecondary = { ...btn, background:"#fff" } as const;
-const input = { padding:"10px 12px", border:"1px solid #e5e7eb", borderRadius:10, minWidth:200 } as const;
-const select = { padding:"10px 12px", border:"1px solid #e5e7eb", borderRadius:10, minWidth:160, maxWidth:220 } as const;
+const input = { padding:"6px 8px", border:"1px solid #e5e7eb", borderRadius:8, width:"fit-content", minWidth:0, lineHeight:1.2 } as const;
+const select = { padding:"6px 8px", border:"1px solid #e5e7eb", borderRadius:8, width:"fit-content", minWidth:0, maxWidth:"100%", lineHeight:1.2 } as const;
 const row = { display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" } as const;
 const label = { width:72, color:"#374151" } as const;
 const badge = { display:"inline-block", padding:"2px 6px", borderRadius:999, background:"#111827", color:"#fff", fontSize:12, lineHeight:1 } as const;
+
 
 /** ========= 성장 추천 본체 ========= */
 function suggestGrowth(params: {
@@ -1352,16 +1354,18 @@ function excludeFeatItem(detailLine: string){
               {/* 종족 (한 줄 정리) */}
               <div style={row}>
                 <label style={label}>{T.race}</label>
-                <select value={raceKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof RACES | "-"; setRaceKey(k); setSubraceKo(k==="-"?"-":(RACES[k].subs?.[0] ?? "-")); }} style={{...select, minWidth:180, maxWidth:200}}>
+                <select value={raceKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof RACES | "-"; setRaceKey(k); setSubraceKo(k==="-"?"-":(RACES[k].subs?.[0] ?? "-")); }} style={select}>
                   <option value="-">-</option>
                   {raceOptions.map(k=><option key={k} value={k}>{lang==="ko"?RACES[k].ko:k}</option>)}
                 </select>
-                <select disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)} value={subraceKo} onChange={e=>setSubraceKo(e.target.value)} style={{...select, minWidth:180, maxWidth:200}}>
+                <select disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)} value={subraceKo} onChange={e=>setSubraceKo(e.target.value)} style={select}>
                   {(raceKey==="-" || !RACES[raceKey].subs) ? <option value="-">-</option> : RACES[raceKey].subs!.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
-                <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-                <input type="checkbox"/>
-              </div>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
+  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+  <input type="checkbox" style={{ margin:0 }}/>
+</div>
+
 
               {/* 클래스 (한 줄 정리) */}
              <div style={row}>
@@ -1402,8 +1406,9 @@ function excludeFeatItem(detailLine: string){
     }
   </select>
 
+ <div style={{ display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
   <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-  <input type="checkbox"/>
+  <input type="checkbox" style={{ margin:0 }}/>
 </div>
 
               {/* 출신 (한 줄 정리) */}
@@ -1413,8 +1418,11 @@ function excludeFeatItem(detailLine: string){
                   <option value="-">-</option>
                   {BACK_KO.map(b=><option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
                 </select>
-                <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-                <input type="checkbox"/>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
+  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+  <input type="checkbox" style={{ margin:0 }}/>
+</div>
+
               </div>
 
               {/* 무기 선택 */}
