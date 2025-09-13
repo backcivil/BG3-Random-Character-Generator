@@ -990,7 +990,7 @@ useEffect(() => {
   // 클래스별 특성(성장)
   const [growClass, setGrowClass] = useState<keyof typeof CLASSES | "-">("-");
   const [growSub, setGrowSub] = useState<string>("-");
-  const [growLevel, setGrowLevel] = useState<number>(3);
+  const [growLevel, setGrowLevel] = useState<number>(1);
   const [growSpellCount, setGrowSpellCount] = useState<number>(1);
   const [growResult, setGrowResult] = useState<string[]>([]);
   const [growExcluded, setGrowExcluded] = useState<Set<string>>(new Set());
