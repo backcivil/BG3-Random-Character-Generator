@@ -1,4 +1,47 @@
 import { useState } from "react";
+/** ========= 스타일 ========= */
+const FONT = 14;
+const CTRL_H = 32;
+const RADIUS = 8;
+
+const btn = {
+  padding: "6px 10px",
+  height: CTRL_H,
+  fontSize: FONT,
+  border: "1px solid #e5e7eb",
+  borderRadius: RADIUS,
+  background: "#f8fafc",
+  cursor: "pointer",
+} as const;
+
+const btnPrimary = { ...btn, background: "#111827", color: "#fff", borderColor: "#111827" } as const;
+const btnSecondary = { ...btn, background: "#fff" } as const;
+
+const input = {
+  padding: "6px 8px",
+  height: CTRL_H,
+  fontSize: FONT,
+  border: "1px solid #e5e7eb",
+  borderRadius: RADIUS,
+  minWidth: 0,
+} as const;
+
+const select = {
+  padding: "6px 28px 6px 8px",
+  height: CTRL_H,
+  fontSize: FONT,
+  border: "1px solid #e5e7eb",
+  borderRadius: RADIUS,
+  minWidth: 0,
+} as const;
+
+const row = { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } as const;
+const rowTight = { ...row, flexWrap: "nowrap" } as const;
+
+const label = { width: 56, color: "#374151", fontSize: FONT } as const;
+const badge = { display:"inline-block", padding:"2px 6px", borderRadius:999, background:"#111827", color:"#fff", fontSize:12, lineHeight:1 } as const;
+
+const nowrap = { whiteSpace: "nowrap" } as const;
 
 /** ========= 유틸 ========= */
 const rand = (n: number) => Math.floor(Math.random() * n);
@@ -801,52 +844,6 @@ function rollSingleForFeat(
 }
 // ===== 단일 항목만 재굴림 헬퍼 끝 =====
 
-
-/** ========= 스타일 ========= */=
-const FONT = 14;
-const CTRL_H = 32;
-const RADIUS = 8;
-
-const btn = {
-  padding: "6px 10px",
-  height: CTRL_H,
-  fontSize: FONT,
-  border: "1px solid #e5e7eb",
-  borderRadius: RADIUS,
-  background: "#f8fafc",
-  cursor: "pointer",
-} as const;
-
-const btnPrimary = { ...btn, background: "#111827", color: "#fff", borderColor: "#111827" } as const;
-const btnSecondary = { ...btn, background: "#fff" } as const;
-
-const input = {
-  padding: "6px 8px",
-  height: CTRL_H,
-  fontSize: FONT,
-  border: "1px solid #e5e7eb",
-  borderRadius: RADIUS,
-  minWidth: 0,
-} as const;
-
-const select = {
-  padding: "6px 28px 6px 8px", // 기본 셀렉트 화살표 여백
-  height: CTRL_H,
-  fontSize: FONT,
-  border: "1px solid #e5e7eb",
-  borderRadius: RADIUS,
-  minWidth: 0,
-} as const;
-
-const row = { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } as const;
-// 한 줄 강제(줄바꿈 방지) 버전 — '수동 선택 & 고정' 라인에만 사용
-const rowTight = { ...row, flexWrap: "nowrap" } as const;
-
-const label = { width: 56, color: "#374151", fontSize: FONT } as const;
-const badge = { display:"inline-block", padding:"2px 6px", borderRadius:999, background:"#111827", color:"#fff", fontSize:12, lineHeight:1 } as const;
-
-const nowrap = { whiteSpace: "nowrap" } as const;
-
 /** ========= 성장 추천 본체 ========= */
 function suggestGrowth(params: {
   klass: string; sub: string; level: number; count: number;
@@ -1290,7 +1287,7 @@ function excludeFeatItem(detailLine: string){
             <section style={{ border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
               <h3 style={{ fontSize:18, fontWeight:700, margin:"0 0 12px" }}>{T.manualPanel}</h3>
 
-             {/* 종족 (한 줄 정리) */}
+          {/* 종족 (한 줄 정리) */}
 <div style={rowTight}>
   <label style={label}>{T.race}</label>
 
@@ -1300,7 +1297,9 @@ function excludeFeatItem(detailLine: string){
     style={{ ...select, width: 140 }}
   >
     <option value="-">-</option>
-    {raceOptions.map(k => <option key={k} value={k}>{lang==="ko"?RACES[k].ko:k}</option>)}
+    {Object.keys(RACES).map(k => (
+      <option key={k} value={k}>{lang==="ko" ? RACES[k as keyof typeof RACES].ko : k}</option>
+    ))}
   </select>
 
   <select
@@ -1319,7 +1318,8 @@ function excludeFeatItem(detailLine: string){
   <input type="checkbox" style={{ width: 16, height: 16, marginLeft: 4 }} />
 </div>
 
-          {/* 클래스 (한 줄 정리) */}
+
+       {/* 클래스 (한 줄 정리) */}
 <div style={rowTight}>
   <label style={label}>{T.klass}</label>
 
@@ -1329,7 +1329,9 @@ function excludeFeatItem(detailLine: string){
     style={{ ...select, width: 160 }}
   >
     <option value="-">-</option>
-    {classOptions.map(k => <option key={k} value={k}>{lang==="ko"?CLASSES[k].ko:k}</option>)}
+    {Object.keys(CLASSES).map(k => (
+      <option key={k} value={k}>{lang==="ko" ? CLASSES[k as keyof typeof CLASSES].ko : k}</option>
+    ))}
   </select>
 
   <select
@@ -1338,29 +1340,36 @@ function excludeFeatItem(detailLine: string){
     onChange={e=>setSubclassKo(e.target.value)}
     style={{ ...select, width: 160 }}
   >
-    {classKey==="-" ? <option value="-">-</option> : CLASSES[classKey].subclasses.map(s => <option key={s} value={s}>{s}</option>)}
+    {classKey==="-" ? (
+      <option value="-">-</option>
+    ) : (
+      CLASSES[classKey].subclasses.map(s => <option key={s} value={s}>{s}</option>)
+    )}
   </select>
 
   <span style={{ ...nowrap, color:"#6b7280", marginLeft: 8 }}>{L[lang].locks}</span>
   <input type="checkbox" style={{ width: 16, height: 16, marginLeft: 4 }} />
 </div>
 
-          {/* 출신 (한 줄 정리) */}
+{/* 출신 (한 줄 정리) */}
 <div style={rowTight}>
   <label style={label}>{T.background}</label>
 
   <select
     value={bg}
-    onChange={(e:any)=>setBg(e.target.value as Background)}
+    onChange={(e:any)=>setBg(e.target.value as any)}
     style={{ ...select, width: 200 }}
   >
     <option value="-">-</option>
-    {BACK_KO.map(b => <option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
+    {Object.keys(BACK_EN).map((ko) => (
+      <option key={ko} value={ko}>{lang==="ko" ? ko : BACK_EN[ko as keyof typeof BACK_EN]}</option>
+    ))}
   </select>
 
   <span style={{ ...nowrap, color:"#6b7280", marginLeft: 8 }}>{L[lang].locks}</span>
   <input type="checkbox" style={{ width: 16, height: 16, marginLeft: 4 }} />
 </div>
+
 
               {/* 무기 선택 */}
               <div style={row}>
