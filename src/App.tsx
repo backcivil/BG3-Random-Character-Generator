@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 /** ========= 유틸 ========= */
 const rand = (n: number) => Math.floor(Math.random() * n);
@@ -9,7 +9,7 @@ const shuffle = <T,>(arr: readonly T[]) => {
   return a;
 };
 const sampleN = <T,>(arr: readonly T[], n: number) => shuffle(arr).slice(0, Math.max(0, Math.min(n, arr.length)));
-const without = <T,>(arr: readonly T[], ban: Set<T>) => arr.filter(v=>!ban.has(v as any));
+
 
 type Lang = "ko" | "en";
 
@@ -887,20 +887,20 @@ export default function App() {
 
   /** ===== 성장 추천 ===== */
   function doSuggestGrowth(){
-    if (growClass==="-" || growLevel<1) { setGrowResult([]); return; }
-    const klass = String(growClass);
-    const sub = growSub==="-" ? "" : growSub;
-    const level = growLevel;
-    const raceKo = raceKey==="-"?"":RACES[raceKey].ko;
-    const subrace = subraceKo;
+  if (growClass==="-" || growLevel<1) { setGrowResult([]); return; }
+  const klass = String(growClass);
+  const sub = growSub==="-" ? "" : growSub;
+  const level = growLevel;
+  const subrace = subraceKo;
 
-    const list = suggestGrowth({
-      klass, sub, level, count: growSpellCount,
-      raceKo, subraceKo: subrace,
-      exclude: growExcluded,
-    });
-    setGrowResult(list);
-  }
+  const list = suggestGrowth({
+    klass, sub, level, count: growSpellCount,
+    subraceKo: subrace,
+    exclude: growExcluded,
+  });
+  setGrowResult(list);
+}
+
   function excludeGrowthItem(line: string){
     // "라벨: 값"에서 값만 추출하여 제외
     const val = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
@@ -911,10 +911,10 @@ export default function App() {
     // 기존 결과에서 해당 라인 제거
     const remain = growResult.filter(x=>x!==line);
     // 같은 kind 재추가
-    const again = suggestGrowth({
-      klass:String(growClass), sub:growSub==="-"?"":growSub, level:growLevel,
-      count:1, raceKo: raceKey==="-"?"":RACES[raceKey].ko, subraceKo,
-      exclude: next,
+const again = suggestGrowth({
+  klass:String(growClass), sub:growSub==="-"?"":growSub, level:growLevel,
+  count:1, raceKo: raceKey==="-"?"":RACES[raceKey].ko, subraceKo,
+  exclude: next,
     }).find(x=>x.startsWith(kind+":")) || null;
     setGrowResult(again? [...remain, again] : remain);
   }
