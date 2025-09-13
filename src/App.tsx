@@ -158,6 +158,20 @@ const RACES: Record<string, { ko: string; subs?: string[] }> = {
   Dragonborn:{ko:"드래곤본", subs:["블랙","코퍼","블루","브론즈","브래스","레드","골드","그린","화이트","실버"]},
   "Half-Orc":{ko:"하프오크"},
 };
+/** ========= 신앙(Cleric Deities) ========= */
+const DEITIES_BASE: string[] = [
+  "셀루네","바하무트","템퍼스","티르","헬름","일메이터","미스트라","오그마","켈렘보어","모라딘",
+  "코렐론 라레시안","갈 글리터골드","욘달라","롤스","그럼쉬","티아마트","에일리스트레이","라샌더",
+  "탈로스","타이모라","미엘리키",
+];
+
+// 종족 조건 반영해서 풀에서 하나 선택
+function randomDeity(raceKey: keyof typeof RACES | "-", subraceKo: string): string {
+  const pool = [...DEITIES_BASE];
+  if (raceKey === "Githyanki") pool.push("블라키스"); // 기스양키면 추가
+  if (subraceKo === "드웨가") pool.push("라더궈");     // 드웨가면 추가
+  return choice(pool);
+}
 
 /** ========= 배경/스킬 ========= */
 const BACK_KO = ["복사","사기꾼","범죄자","연예인","시골 영웅","길드 장인","귀족","이방인","현자","군인","부랑아"] as const;
@@ -949,6 +963,7 @@ export default function App() {
   const [subraceKo, setSubraceKo] = useState<string>("-");
   const [classKey, setClassKey] = useState<keyof typeof CLASSES | "-">("-");
   const [subclassKo, setSubclassKo] = useState<string>("-");
+  const [deityKo, setDeityKo] = useState<string>("-");
   const [bg, setBg] = useState<Background>("-");
   const [stats, setStats] = useState<Record<Abil, number>>({ STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 });
   const [pbBonus2, setPbBonus2] = useState<Abil | null>(null);
@@ -1010,12 +1025,19 @@ useEffect(() => {
     setRaceKey(r);
     setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-");
   }
-  function rollClass() {
-    const keys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-    const k = choice(keys);
-    setClassKey(k);
-    setSubclassKo(choice(CLASSES[k].subclasses));
-  }
+ function rollClass() {
+  const keys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+  const k = choice(keys);
+  setClassKey(k);
+
+  const sc = choice(CLASSES[k].subclasses);
+  setSubclassKo(sc);
+
+  // Cleric이면 신앙도 함께 랜덤
+  if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
+  else setDeityKo("-");
+}
+
   function rollBackground() { setBg(choice(BACK_KO)); }
   function rollStatsBtn() {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
@@ -1046,11 +1068,33 @@ useEffect(() => {
     setSkills(picks);
   }
  function rollAll() {
-  rollRace();
-  rollClass();
-  rollBackground();
-  rollStatsBtn();
+  // 1) 종족
+  const raceKeys = Object.keys(RACES) as (keyof typeof RACES)[];
+  const r = choice(raceKeys);
+  const sr = RACES[r].subs ? choice(RACES[r].subs!) : "-";
+  setRaceKey(r);
+  setSubraceKo(sr);
+
+  // 2) 클래스
+  const classKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+  const k = choice(classKeys);
+  const sc = choice(CLASSES[k].subclasses);
+  setClassKey(k);
+  setSubclassKo(sc);
+
+  // 3) 출신
+  const b = choice(BACK_KO);
+  setBg(b);
+
+  // 4) 능력치
+  const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
+  setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
+
+  // 5) 신앙 (클레릭일 때만, 종족/서브종족 조건 반영)
+  if (k === "Cleric") setDeityKo(randomDeity(r, sr));
+  else setDeityKo("-");
 }
+
 
 
   /** ===== 주사위/승자 ===== */
@@ -1194,7 +1238,12 @@ function excludeFeatItem(detailLine: string){
 
                 <div style={{ color:"#6b7280" }}>{T.klass}</div>
                 <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-                  <div>{classOut}{subclassKo !== "-" ? ` / ${subclassKo}` : ""}</div>
+                 <div>
+  {classOut}
+  {subclassKo !== "-" ? ` / ${subclassKo}` : ""}
+  {classKey === "Cleric" && deityKo !== "-" ? ` / ${deityKo}` : ""}
+</div>
+
                 </div>
 
                 <div style={{ color:"#6b7280" }}>{T.background}</div>
@@ -1316,11 +1365,19 @@ function excludeFeatItem(detailLine: string){
               {/* 클래스 (한 줄 정리) */}
               <div style={row}>
                 <label style={label}>{T.klass}</label>
-                <select value={classKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof CLASSES | "-"; setClassKey(k); setSubclassKo(k==="-"?"-":CLASSES[k].subclasses[0]); }} style={{...select, minWidth:200, maxWidth:220}}>
-                  <option value="-">-</option>
-                  {classOptions.map(k=><option key={k} value={k}>{lang==="ko"?CLASSES[k].ko:k}</option>)}
-                </select>
-                <select disabled={classKey==="-" } value={subclassKo} onChange={e=>setSubclassKo(e.target.value)} style={{...select, minWidth:200, maxWidth:220}}>
+               <select
+  value={classKey}
+  onChange={(e:any)=>{
+    const k = e.target.value as keyof typeof CLASSES | "-";
+    setClassKey(k);
+    const sc = k==="-" ? "-" : CLASSES[k].subclasses[0];
+    setSubclassKo(sc);
+    if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
+    else setDeityKo("-");
+  }}
+  style={{...select, minWidth:200, maxWidth:220}}
+>
+
                   {classKey==="-" ? <option value="-">-</option> : CLASSES[classKey].subclasses.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
                 <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
