@@ -1,47 +1,4 @@
-import { useState } from "react";
-/** ========= 스타일 ========= */
-const FONT = 14;
-const CTRL_H = 32;
-const RADIUS = 8;
-
-const btn = {
-  padding: "6px 10px",
-  height: CTRL_H,
-  fontSize: FONT,
-  border: "1px solid #e5e7eb",
-  borderRadius: RADIUS,
-  background: "#f8fafc",
-  cursor: "pointer",
-} as const;
-
-const btnPrimary = { ...btn, background: "#111827", color: "#fff", borderColor: "#111827" } as const;
-const btnSecondary = { ...btn, background: "#fff" } as const;
-
-const input = {
-  padding: "6px 8px",
-  height: CTRL_H,
-  fontSize: FONT,
-  border: "1px solid #e5e7eb",
-  borderRadius: RADIUS,
-  minWidth: 0,
-} as const;
-
-const select = {
-  padding: "6px 28px 6px 8px",
-  height: CTRL_H,
-  fontSize: FONT,
-  border: "1px solid #e5e7eb",
-  borderRadius: RADIUS,
-  minWidth: 0,
-} as const;
-
-const row = { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } as const;
-const rowTight = { ...row, flexWrap: "nowrap" } as const;
-
-const label = { width: 56, color: "#374151", fontSize: FONT } as const;
-const badge = { display:"inline-block", padding:"2px 6px", borderRadius:999, background:"#111827", color:"#fff", fontSize:12, lineHeight:1 } as const;
-
-const nowrap = { whiteSpace: "nowrap" } as const;
+import { useEffect, useState } from "react";
 
 /** ========= 유틸 ========= */
 const rand = (n: number) => Math.floor(Math.random() * n);
@@ -52,26 +9,7 @@ const shuffle = <T,>(arr: readonly T[]) => {
   return a;
 };
 const sampleN = <T,>(arr: readonly T[], n: number) => shuffle(arr).slice(0, Math.max(0, Math.min(n, arr.length)));
-
-// ===== 주문 풀 유틸 (누적 풀/중복 방지) =====
-function flattenPool(pool: Record<number, string[]>, exclude: Set<string>): string[] {
-  const all = Object.keys(pool)
-    .map((n) => Number(n))
-    .filter((lv) => lv > 0)
-    .flatMap((lv) => pool[lv] || []);
-  return Array.from(new Set(all)).filter((s) => !exclude.has(s));
-}
-function pickUnique<T>(pool: readonly T[], n: number, already: Set<T>): T[] {
-  const cand = pool.filter((x) => !already.has(x));
-  const arr = shuffle(cand);
-  const out: T[] = [];
-  for (const x of arr) {
-    if (out.length >= n) break;
-    out.push(x);
-    already.add(x);
-  }
-  return out;
-}
+const uniq = <T,>(arr: T[]) => Array.from(new Set(arr));
 
 type Lang = "ko" | "en";
 
@@ -84,6 +22,8 @@ const L = {
     race: "종족",
     klass: "클래스",
     background: "출신",
+    deity: "신앙",
+    bodyType: "신체유형",
     weapons: "무기",
     skills: "기술",
     abilities: "능력치",
@@ -91,10 +31,11 @@ const L = {
     onlyRace: "종족만",
     onlyClass: "클래스만",
     onlyBG: "출신만",
+    onlyBody: "신체유형만",
     rollStats: "능력치만",
     rerollWeapons: "숙련된 무기만",
     any2Weapons: "무기만(아무거나)",
-    rollSkills: "기술만",
+    rollSkills: "기술 다시 뽑기",
     featSection: "재주",
     rollFeat: "재주 뽑기",
     langBtn: "English",
@@ -103,7 +44,7 @@ const L = {
     dicePH: "예: 1d4, 3d6+2",
     rollDice: "굴리기",
     vsTitle: "승자 정하기",
-    vsPH: "공백 또는 쉼표로 구분 (예:민스크 부 아스타리온 카를라크)",
+    vsPH: "공백 또는 쉼표로 구분 (레드 유히 함마김 활잽이)",
     vsRoll: "굴리기 (1d20)",
     winner: "승자",
     manualPanel: "수동 선택 & 고정",
@@ -113,7 +54,7 @@ const L = {
     subPick: "서브클래스",
     levelPick: "레벨",
     howManySpells: "배울 주문 수",
-    suggest: "무작위 선택",
+    suggest: "랜덤 제시",
     openPicker: "선택",
     apply: "적용",
     cancel: "취소",
@@ -128,6 +69,8 @@ const L = {
     race: "Race",
     klass: "Class",
     background: "Background",
+    deity: "Deity",
+    bodyType: "Body Type",
     weapons: "Weapons",
     skills: "Skills",
     abilities: "Abilities",
@@ -135,6 +78,7 @@ const L = {
     onlyRace: "Race Only",
     onlyClass: "Class Only",
     onlyBG: "Background Only",
+    onlyBody: "Body Only",
     rollStats: "Roll Abilities",
     rerollWeapons: "Reroll Proficient",
     any2Weapons: "Any Weapons",
@@ -157,7 +101,7 @@ const L = {
     subPick: "Subclass",
     levelPick: "Level",
     howManySpells: "Spell Picks",
-    suggest: "Randomize",
+    suggest: "Random Picks",
     openPicker: "Pick",
     apply: "Apply",
     cancel: "Cancel",
@@ -290,9 +234,21 @@ const SUBCLASS_EXTRA_WEAPONS: Record<string,string[]> = {
   "클레릭:죽음 권역": Object.values(MARTIAL_KO),
   "위저드:칼날 노래": ["단검","장검","레이피어","협도","소검","낫"],
 };
+
 // ====== 주문 풀(요약) : 패치8 포함 ======
 const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"];
 const LV2_PATCH8 = ["그림자 검"];
+
+/** ========= 클레릭 신앙 ========= */
+const CLERIC_DEITIES_BASE = [
+  "셀루네","바하무트","템퍼스","티르","헬름","일메이터","미스트라","오그마","켈렘보어","모라딘",
+  "코렐론 라레시안","갈 글리터골드","욘달라","롤스","그럼쉬","티아마트","에일리스트레이","라샌더",
+  "탈로스","타이모라","미엘리키"
+] as const;
+const CLERIC_DEITY_EXTRA_BY_RACE = {
+  Githyanki: ["블라키스"],
+  Dwarf_Duergar: ["라더궈"],
+} as const;
 
 // ====== 클래스별 주문 목록 ======
 const BARD_SPELLS = {
@@ -339,12 +295,11 @@ const WARLOCK_BASE = {
   4: ["추방","역병","차원문"],
   5: ["괴물 포박"],
 };
-// 워락 확장 주문(서브클래스) — 주술 칼날 업데이트 반영
 const WARLOCK_EXP: Record<string, Record<number,string[]>> = {
   "마족": { 1:["불타는 손길","명령"], 3:["실명","작열 광선"], 5:["화염구","악취 구름"], 7:["화염 방패","화염 벽"], 9:["냉기 분사","화염 일격"] },
   "고대의 지배자": { 1:["불협화음의 속삭임","타샤의 끔찍한 웃음"], 3:["생각 탐지","환영력"], 5:["저주 부여","둔화"], 7:["야수 지배","에바드의 검은 촉수"], 9:["인간형 지배","염력"] },
   "대요정": { 1:["요정불","수면"], 3:["평정심","환영력"], 5:["점멸","식물 성장"], 7:["야수 지배","상급 투명"], 9:["인간형 지배","외견"] },
-  // ★ 주술 칼날(업데이트)
+  // 최신 주술 칼날(요청 반영)
   "주술 칼날": {
     1:["방어막","분노의 강타"],
     3:["잔상","낙인 강타"],
@@ -353,6 +308,15 @@ const WARLOCK_EXP: Record<string, Record<number,string[]>> = {
     9:["추방 강타","냉기 분사"],
   },
 };
+// 주술 칼날 확장 주문의 정확한 레벨 매핑
+const HEXBLADE_LEVELS: Record<string,1|2|3|4|5> = {
+  "방어막":1, "분노의 강타":1,
+  "잔상":2, "낙인 강타":2,
+  "점멸":3, "원소 무기":3,
+  "환영 살해자":4, "충격의 강타":4, "야수 지배":4, "상급 투명":4,
+  "추방 강타":5, "냉기 분사":5,
+};
+
 const WIZARD_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","소환수 찾기","안개구름","기름칠","얼음 칼","도약 강화","활보","마법사의 갑옷","마력탄","선악 보호","독 광선","방어막","수면","타샤의 끔찍한 웃음","천둥파","마녀의 화살"],
@@ -376,7 +340,7 @@ const MONK_FE_SPELLS = {
   6: ["북풍의 손아귀","불지옥의 포옹","정상의 징"],
   11:["불사조의 불꽃","안개 태세","바람 타기"],
 };
-// 파이터/로그 (AT/EK)
+// 파이터(비술 기사) / 로그(비전 괴도)
 const EK_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","오색 보주","마력탄","마법사의 갑옷","선악 보호","방어막","천둥파","마녀의 화살"],
@@ -392,15 +356,48 @@ const AT_SPELLS = {
 const ELDRITCH_SHOTS = ["추방 화살","현혹 화살","폭발 화살","약화 화살","속박 화살","추적 화살","그림자 화살","관통 화살"];
 const BM_MANEUVERS = ["사령관의 일격","무장 해제 공격","교란의 일격","날렵한 발놀림","속임수 공격","도발 공격","전투 기법 공격","위협 공격","정밀 공격","밀치기 공격","고양 응수","휩쓸기","다리 걸기 공격"];
 
-/** ========= 바드: 마법 비밀 목록 ========= */
-const BARD_SECRETS: Record<number, string[]> = {
-  0: ["뼛속 냉기","섬뜩한 파동","화염살","서리 광선","신성한 불길"],
-  1: ["아거티스의 갑옷","축복","오색 보주","명령","휘감기","거짓 목숨","유도 화살","지옥의 질책","주술","사냥꾼의 표식","얼음 칼","마력탄","성역","천둥 강타"],
-  2: ["비전 자물쇠","잔상","어둠","암시야","안개 걸음","신출귀몰","약화 광선","작열 광선","가시밭","영적 무기","거미줄"],
-  3: ["망자 조종","활력의 감시자","낙뢰 소환","주문 방해","성전사의 망토","햇빛","화염구","비행 부여","기체 형태","가속","하다르의 굶주림","번개 줄기","다중 치유의 단어","저주 해제","생환","진눈깨비 폭풍","둔화","영혼 수호자","흡혈의 손길"],
-  4: ["추방","역병","죽음 방비","야수 지배","화염 방패","믿음의 수호자","얼음 폭풍","화염 벽"],
-  5: ["추방 강타","냉기 분사","정령 소환","감염","바위의 벽"],
-};
+/** ========= 스타일 ========= */
+const FONT = 14;
+const CTRL_H = 32;
+const RADIUS = 8;
+
+const btn = {
+  padding: "6px 10px",
+  height: CTRL_H,
+  fontSize: FONT,
+  border: "1px solid #e5e7eb",
+  borderRadius: RADIUS,
+  background: "#f8fafc",
+  cursor: "pointer",
+} as const;
+
+const btnPrimary = { ...btn, background: "#111827", color: "#fff", borderColor: "#111827" } as const;
+const btnSecondary = { ...btn, background: "#fff" } as const;
+
+const input = {
+  padding: "6px 8px",
+  height: CTRL_H,
+  fontSize: FONT,
+  border: "1px solid #e5e7eb",
+  borderRadius: RADIUS,
+  minWidth: 0,
+} as const;
+
+const select = {
+  padding: "6px 28px 6px 8px",
+  height: CTRL_H,
+  fontSize: FONT,
+  border: "1px solid #e5e7eb",
+  borderRadius: RADIUS,
+  minWidth: 0,
+} as const;
+
+const row = { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } as const;
+const rowTight = { ...row, flexWrap: "nowrap" } as const;
+
+const label = { width: 72, color: "#374151", fontSize: FONT } as const;
+const badge = { display:"inline-block", padding:"2px 6px", borderRadius:999, background:"#111827", color:"#fff", fontSize:12, lineHeight:1 } as const;
+const nowrap = { whiteSpace: "nowrap" } as const;
 
 /** ========= 포인트바이 ========= */
 function rollPointBuyRaw(): Record<Abil,number> {
@@ -425,6 +422,14 @@ function parseDice(expr: string): { n:number; m:number; mod:number } | null {
   const n=Math.max(1,parseInt(m[1],10)); const sides=Math.max(2,parseInt(m[2],10)); const mod=m[3]?parseInt(m[3],10):0;
   return { n, m:sides, mod };
 }
+
+/** ========= 신체유형 ========= */
+function allowedBodyTypes(raceKey: keyof typeof RACES | "-"): (1|2|3|4)[] {
+  if (raceKey === "-") return [1,2,3,4];
+  const short = ["Githyanki","Dwarf","Halfling","Gnome","Dragonborn","Half-Orc"] as const;
+  return (short as readonly string[]).includes(raceKey) ? [1,2] : [1,2,3,4];
+}
+function bodyTypeLabel(n: 1|2|3|4){ return n===1?"1(여성)": n===2?"2(남성)": n===3?"3(큰 여성)":"4(큰 남성)"; }
 
 /** ========= 무기/기술 계산 ========= */
 function randomAny2KO(): string[] {
@@ -454,7 +459,7 @@ function computeClassSkills(classKo: string, bgSel: Background): SkillKey[] {
   return sampleN(pool, cfg.n);
 }
 function bgLabel(bg: Background, lang: Lang="ko") {
-  if (bg === "-") return ""; // 초기 표시에 '-' 숨김
+  if (bg === "-") return ""; // 초기 '-'는 표시하지 않음
   return lang === "ko" ? bg : BACK_EN[bg];
 }
 
@@ -475,8 +480,7 @@ function uniqueRolls(names: string[]): { lines: string[]; winner: string } {
   return { lines, winner: sorted[0][0] };
 }
 
-/** ========= 성장 로직(주문·특성) ========= */
-// 한 레벨에서 허용되는 주문 레벨 상한
+/** ========= 주문 풀/성장 ========= */
 function maxSpellLevelByClass(klass: string, level: number): number {
   switch (klass) {
     case "Bard":
@@ -493,25 +497,21 @@ function maxSpellLevelByClass(klass: string, level: number): number {
       return Math.min(3, Math.floor((level + 1) / 4));
     case "Rogue":  // AT 전용
       return level >= 7 ? 2 : level >= 3 ? 1 : 0;
-    case "Monk":   // 사원소의 길: 특수 테이블
+    case "Monk":
     default:
       return 0;
   }
 }
-
-// 사원소 몽크: 레벨 구간별 "알고 있는 주문 수"
 function monkFEKnown(level: number): number {
-  if (level <= 6) return 3;       // 3~6 : 3개
-  if (level <= 9) return 4;       // 7~9 : 4개
-  if (level <= 11) return 5;      // 10~11 : 5개
-  return 6;                       // 12 : 6개
+  if (level <= 6) return 3;
+  if (level <= 9) return 4;
+  if (level <= 11) return 5;
+  return 6;
 }
-
-// 각 클래스의 "알고 있는 주문 수"(소마법 제외) — 교체 굴림에 사용
 function knownSpellCount(klass: string, sub: string, level: number): number {
   if (klass === "Ranger") {
     if (level < 2) return 0;
-    let c = 2; // 2레벨 2개, 이후 홀수 레벨마다 +1
+    let c = 2;
     for (let lv = 3; lv <= level; lv++) if (lv % 2 === 1) c++;
     return c;
   }
@@ -527,12 +527,10 @@ function knownSpellCount(klass: string, sub: string, level: number): number {
     return map[level] ?? 0;
   }
   if (klass === "Monk" && sub === "사원소의 길") return monkFEKnown(level);
-  return 0; // 준비형(Cleric/Druid/Wizard 등)은 교체 개념과 다름
+  return 0;
 }
-
-// 캐릭터가 배울 수 있는 주문 풀(클래스/서브/레벨 기준)
 function collectSpellPool(klass: string, sub: string, level: number): Record<number,string[]> {
-  // AT/EK는 3레벨부터 주문 시작
+  // AT/EK는 3레벨부터
   if ((klass==="Fighter" && sub==="비술 기사" && level<3) || (klass==="Rogue" && sub==="비전 괴도" && level<3)) {
     return {};
   }
@@ -551,17 +549,19 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
   if (klass==="Warlock") {
     const base = upTo(WARLOCK_BASE, maxSpellLevelByClass(klass, level));
     const exp = WARLOCK_EXP[sub] || {};
-    for (const k of Object.keys(exp)) {
-      const gate = Number(k);
-      if (level >= (gate===1?1:gate)) {
+    for (const gate of Object.keys(exp).map(Number).sort((a,b)=>a-b)) {
+      if (level >= gate) {
         for (const s of exp[gate]) {
-          let sl = 4;
-          if (WARLOCK_BASE[1]?.includes(s)) sl=1;
-          else if (WARLOCK_BASE[2]?.includes(s)) sl=2;
-          else if (WARLOCK_BASE[3]?.includes(s)) sl=3;
-          else if (WARLOCK_BASE[4]?.includes(s)) sl=4;
-          else if (WARLOCK_BASE[5]?.includes(s)) sl=5;
-          base[sl] = Array.from(new Set([...(base[sl]||[]), s]));
+          // 명시 매핑(주술 칼날 우선), 없으면 기본 목록에서 추론
+          let sl = HEXBLADE_LEVELS[s as keyof typeof HEXBLADE_LEVELS] || 4 as 1|2|3|4|5;
+          if (!HEXBLADE_LEVELS[s as keyof typeof HEXBLADE_LEVELS]) {
+            if (WARLOCK_BASE[1]?.includes(s)) sl=1;
+            else if (WARLOCK_BASE[2]?.includes(s)) sl=2;
+            else if (WARLOCK_BASE[3]?.includes(s)) sl=3;
+            else if (WARLOCK_BASE[4]?.includes(s)) sl=4;
+            else if (WARLOCK_BASE[5]?.includes(s)) sl=5;
+          }
+          base[sl] = uniq([...(base[sl]||[]), s]);
         }
       }
     }
@@ -584,6 +584,39 @@ function collectSpellPool(klass: string, sub: string, level: number): Record<num
   }
   return {};
 }
+
+// 누적 풀 평탄화 + 중복 금지
+function flattenPool(pool: Record<number,string[]>, exclude: Set<string>): string[] {
+  const levels = Object.keys(pool).map(Number).sort((a,b)=>a-b);
+  const flat: string[] = [];
+  for (const lv of levels) for (const s of (pool[lv]||[])) if (!exclude.has(s)) flat.push(s);
+  return uniq(flat);
+}
+function pickUnique(list: string[], n: number, already = new Set<string>()): string[] {
+  const pool = list.filter(x=>!already.has(x));
+  const out: string[] = [];
+  let remain = Math.max(0, Math.min(n, pool.length));
+  const bag = shuffle(pool);
+  let i=0;
+  while (remain>0 && i<bag.length){ out.push(bag[i]); already.add(bag[i]); remain--; i++; }
+  return out;
+}
+function buildReplaceLine(klass: string, sub: string, level: number): string | null {
+  const canReplace =
+    (klass==="Ranger" && level>=3) ||
+    (klass==="Bard" && level>=2) ||
+    (klass==="Sorcerer" && level>=2) ||
+    (klass==="Warlock" && level>=2) ||
+    (klass==="Rogue" && sub==="비전 괴도" && level>=4) ||
+    (klass==="Fighter" && sub==="비술 기사" && level>=4) ||
+    (klass==="Monk" && sub==="사원소의 길" && level>=4);
+  if (!canReplace) return null;
+  const known = knownSpellCount(klass, sub, level);
+  if (known <= 0) return null;
+  const roll = rand(known) + 1; // 1..known
+  return `교체 굴림 (1d${known} → ${roll}): 기존 ${roll}번째 주문 제거 → 레벨 허용 주문 중 1개 추가`;
+}
+
 /** ========= 재주(Feats) ========= */
 type FeatId =
   | "AbilityImprovements" | "Actor" | "Alert" | "Athlete" | "Charger" | "CrossbowExpert" | "DefensiveDuelist"
@@ -637,151 +670,34 @@ const FEATS_ALL: { id: FeatId; ko: string; en: string }[] = [
   {id:"WarCaster", ko:"전쟁 시전자", en:"War Caster"},
   {id:"WeaponMaster", ko:"무기의 달인", en:"Weapon Master"},
 ];
-/** ========= 재주 UI 보조 ========= */
+
+/** 재주 UI 보조: 서브옵션(제외 버튼) 없는 재주 */
 const NO_SUBOPTION_FEATS = new Set<FeatId>([
   "CrossbowExpert","GreatWeaponMaster","Lucky","Mobile","Sharpshooter","Sentinel",
   "ShieldMaster","Tough","WarCaster","Actor","Alert","Charger","DungeonDelver",
-  "Durable","MageSlayer","Performer","PolearmMaster"
+  "Durable","MageSlayer","Performer","PolearmMaster","SavageAttacker","DefensiveDuelist","DualWielder",
+  "HeavilyArmoured","HeavyArmourMaster","LightlyArmoured","MediumArmourMaster","ModeratelyArmoured"
 ]);
 
-// ==== 재주 줄-단위 리롤 유틸 ====
-// "원소 숙련: 산성" -> "산성" 처럼 꼬리값만 추출
-function extractTail(line: string): string {
-  return line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
-}
-
-// 주문 저격수/원소 숙련 등 "1줄짜리 선택" 재주에서,
-// 해당 줄만 다른 값으로 교체 리롤
-function rerollFeatLine(
-  featId: FeatId,
-  line: string,
-  excluded: Set<string>,
-  lang: Lang
-): string | null {
-  const tail = extractTail(line);
-  const prefix = line.split(":")[0];
-
-  // 공용: 능력 라벨 변환
-  const abilKoMap: Record<string,string> = { STR:"힘", DEX:"민첩", CON:"건강", INT:"지능", WIS:"지혜", CHA:"매력" };
-  const labelOf = (a: string) => (lang==="ko" ? (abilKoMap[a] ?? a) : a);
-
-  // 주문 저격수
-  if (featId === "SpellSniper" && prefix.startsWith("주문")) {
-    const base = ["뼛속 냉기","섬뜩한 파동","화염살","서리 광선","전격의 손아귀","가시 채찍"];
-    const pool = base.filter(x => x !== tail && !excluded.has(x));
-    if (pool.length === 0) return null; // 남은게 없으면 상위 풀리롤로 위임
-    return `주문: ${choice(pool)}`;
-  }
-
-  // 원소 숙련
-  if (featId === "ElementalAdept" && prefix.startsWith("원소 숙련")) {
-    const base = ["산성","냉기","화염","번개","천둥"];
-    const pool = base.filter(x => x !== tail && !excluded.has(x));
-    if (pool.length === 0) return null;
-    return `원소 숙련: ${choice(pool)}`;
-  }
-
-  // Athlete / Armoured 류(+1) — 한 줄만 리롤
-  if (
-    ["Athlete","LightlyArmoured","HeavilyArmoured","MediumArmourMaster","ModeratelyArmoured","HeavyArmourMaster","TavernBrawler"].includes(featId)
-    && prefix.startsWith("능력 +1")
-  ) {
-    const baseAbils = ["STR","DEX","CON","INT","WIS","CHA"];
-    // 해당 재주별 허용 능력치 제한
-    let allow = baseAbils;
-    if (["Athlete","LightlyArmoured","HeavilyArmoured","MediumArmourMaster","ModeratelyArmoured","HeavyArmourMaster","TavernBrawler"].includes(featId)) {
-      allow = featId==="TavernBrawler" ? ["STR","CON"] :
-              ["Athlete","LightlyArmoured","HeavilyArmoured","MediumArmourMaster","ModeratelyArmoured","HeavyArmourMaster"].includes(featId)
-                ? ["STR","DEX"]
-                : baseAbils;
-    }
-    // 제외/현재 선택 제거
-    const pool = allow
-      .map(a => labelOf(a))
-      .filter(lbl => lbl !== tail && !excluded.has(lbl));
-    if (pool.length === 0) return null;
-    return `능력 +1: ${choice(pool)}`;
-  }
-
-  // Resilient(저항력: 능력 1개) — 한 줄 리롤
-  if (featId === "Resilient" && prefix.startsWith("저항력")) {
-    const base = ["근력","민첩","건강","지능","지혜","매력"];
-    const pool = base.filter(x => x !== tail && !excluded.has(x));
-    if (pool.length === 0) return null;
-    return `저항력: ${choice(pool)}`;
-  }
-
-  // Ritual Caster(의식 주문), Skilled(기술 숙련) 등 다줄형은
-  // 이미 줄-분할되어 있다면 동일 프리픽스로 교체 로직을 추가하면 됨.
-  // (현재 정상 동작 중이라면 여기선 패스)
-
-  return null;
-}
-
-// 재주 옵션 생성기
-// ===== 여기부터 featRollCore 교체 =====
 function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: string; lines: string[] } {
   const label = FEATS_ALL.find(f=>f.id===id)!;
   const name = lang==="ko"?label.ko:label.en;
   const lines: string[] = [];
   const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
 
-  // 헬퍼
-  const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
-
   switch(id){
-// case "AbilityImprovements" 분기만 교체
-case "AbilityImprovements": {
-  // 50% 확률로 같은 능력치 두 번(+1+1), 50%는 서로 다른 두 능력치(+1+1)
-  const abilAll = ["STR","DEX","CON","INT","WIS","CHA"] as const;
-  const labelOf = (a: string) => (lang==="ko" ? abilKoMap[a as keyof typeof abilKoMap] : a);
-
-  const doubleSame = Math.random() < 0.5;
-
-  if (doubleSame) {
-    // 같은 능력치 두 번 (예: 힘, 힘)
-    const a = choice(abilAll);
-    const lbl = labelOf(a);
-    // 제외 목록에 이 라벨이 있다면 대체 가능할 때까지 재굴림
-    let guard = 100;
-    while (guard-- > 0 && excluded.has(lbl)) {
-      const cand = choice(abilAll); 
-      if (!excluded.has(labelOf(cand))) { 
-        // 교체
-        const lbl2 = labelOf(cand);
-        // 최종 확정
-        lines.push(`능력 +1: ${lbl2}`);
-        lines.push(`능력 +1: ${lbl2}`);
-        break;
+    case "AbilityImprovements": {
+      // 서로 다른 2개
+      const picks: Abil[] = [];
+      const pool: Abil[] = ["STR","DEX","CON","INT","WIS","CHA"];
+      while (picks.length<2 && pool.length){
+        const p = choice(pool);
+        picks.push(p); pool.splice(pool.indexOf(p),1);
       }
+      const label2 = picks.map(a=>lang==="ko"?abilKoMap[a]:a).join(", ");
+      lines.push(`능력 +2: ${label2}`);
+      break;
     }
-    if (lines.length === 0) {
-      // 정상 루트: 제외에 걸리지 않았을 때
-      lines.push(`능력 +1: ${lbl}`);
-      lines.push(`능력 +1: ${lbl}`);
-    }
-  } else {
-    // 서로 다른 두 능력치
-    const [a, b] = sampleN(abilAll, 2);
-    const la = labelOf(a), lb = labelOf(b);
-    // 제외 적용: 걸리면 대체
-    const picks: string[] = [];
-    const pool = abilAll.map(x => labelOf(x)).filter(lbl => !excluded.has(lbl));
-
-    const pickOne = () => pool.length ? choice(pool) : (lang==="ko" ? "힘" : "STR");
-    const pa = excluded.has(la) ? pickOne() : la;
-    // b가 a와 같아지지 않도록 보장
-    const pool2 = pool.filter(lbl => lbl !== pa);
-    const pb = excluded.has(lb) ? (pool2.length ? choice(pool2) : pickOne()) : lb;
-
-    lines.push(`능력 +1: ${pa}`);
-    lines.push(`능력 +1: ${pb}`);
-  }
-  break;
-}
-
-
-    // 능력 +1 계열 (단일 항목)
     case "Athlete":
     case "LightlyArmoured":
     case "HeavilyArmoured":
@@ -792,14 +708,12 @@ case "AbilityImprovements": {
       if (pool.length>0) lines.push(`능력 +1: ${choice(pool)}`);
       break;
     }
-
     case "ElementalAdept": {
-      const elem = choice(["산성","냉기","화염","번개","천둥"].filter(x=>!excluded.has(x)));
-      if (elem) lines.push(`원소 숙련: ${elem}`);
+      // 단일 선택(제외 시 즉시 리롤)
+      const cand = ["산성","냉기","화염","번개","천둥"].filter(x=>!excluded.has(x));
+      if (cand.length>0) lines.push(`원소 숙련: ${choice(cand)}`);
       break;
     }
-
-    // 마법 입문: 각 아이템을 "한 줄씩" 넣는다 (소마법×2, 1레벨×1)
     case "MagicInitiate:Bard":
     case "MagicInitiate:Cleric":
     case "MagicInitiate:Druid":
@@ -808,80 +722,61 @@ case "AbilityImprovements": {
     case "MagicInitiate:Wizard": {
       const base = id.split(":")[1];
       const pool = (base==="Bard"?BARD_SPELLS: base==="Cleric"?CLERIC_SPELLS: base==="Druid"?DRUID_SPELLS: base==="Sorcerer"?SORCERER_SPELLS: base==="Warlock"?WARLOCK_BASE: WIZARD_SPELLS);
-      // 소마법 2개(개별 라인)
-      const canPool = (pool[0]||[]).filter(x=>!excluded.has(x));
-      const cantrips = sampleN(canPool, 2);
-      for (const c of cantrips) lines.push(`소마법: ${c}`);
-      // 1레벨 주문 1개(개별 라인)
-      const l1Pool = (pool[1]||[]).filter(x=>!excluded.has(x));
-      if (l1Pool.length>0) lines.push(`1레벨 주문: ${choice(l1Pool)}`);
+      const can = (pool[0]||[]).filter(x=>!excluded.has(x));
+      const l1 = (pool[1]||[]).filter(x=>!excluded.has(x));
+      const canPicks = sampleN(can, Math.min(2, can.length));
+      const l1Pick = l1.length? choice(l1): null;
+      if (canPicks.length>0) canPicks.forEach(s=>lines.push(`소마법: ${s}`));
+      if (l1Pick) lines.push(`1레벨 주문: ${l1Pick}`);
       break;
     }
-
-    // 무예 숙련: 2개를 개별 라인
     case "MartialAdept": {
-      const avail = BM_MANEUVERS.filter(x=>!excluded.has(x));
-      const one = choice(avail);
-      const two = choice(avail.filter(x=>x!==one));
-      if (one) lines.push(`전투 기법: ${one}`);
-      if (two) lines.push(`전투 기법: ${two}`);
+      const pool = BM_MANEUVERS.filter(x=>!excluded.has(x));
+      const a = choice(pool);
+      const b = choice(pool.filter(x=>x!==a));
+      if (a) lines.push(`전투 기법: ${a}`);
+      if (b) lines.push(`전투 기법: ${b}`);
       break;
     }
-
     case "Resilient": {
       const one = choice(["근력","민첩","건강","지능","지혜","매력"].filter(x=>!excluded.has(x)));
       if (one) lines.push(`저항력: ${one}`);
       break;
     }
-
-    // 의식 시전자: 2개를 개별 라인
     case "RitualCaster": {
-      const arr = ["망자와 대화","소환수 찾기","활보","도약 강화","변장","동물과 대화"].filter(x=>!excluded.has(x));
-      const picks = sampleN(arr, 2);
-      for (const p of picks) lines.push(`의식 주문: ${p}`);
+      const two = sampleN(["망자와 대화","소환수 찾기","활보","도약 강화","변장","동물과 대화"].filter(x=>!excluded.has(x)), 2);
+      two.forEach(t=>lines.push(`의식 주문: ${t}`));
       break;
     }
-
-    // 숙련가: 3개를 개별 라인
     case "Skilled": {
-      const all = Object.keys(SK.KO) as SkillKey[];
-      const pool = all.map(skillDisp).filter(x=>!excluded.has(x));
-      const picks = sampleN(pool, 3);
-      for (const p of picks) lines.push(`기술 숙련: ${p}`);
+      const three = sampleN(Object.keys(SK.KO) as SkillKey[], 3).filter(x=>!excluded.has(SK.KO[x]));
+      three.forEach(s=>lines.push(`기술 숙련: ${s in SK.KO ? (SK.KO as any)[s] : s}`));
       break;
     }
-
     case "SpellSniper": {
       const can = ["뼛속 냉기","섬뜩한 파동","화염살","서리 광선","전격의 손아귀","가시 채찍"].filter(x=>!excluded.has(x));
       if (can.length>0) lines.push(`주문: ${choice(can)}`);
       break;
     }
-
     case "TavernBrawler": {
       const pool = ["STR","CON"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
       if (pool.length>0) lines.push(`능력 +1: ${choice(pool)}`);
       break;
     }
-
-    // 무기 숙련가: 능력+1 (1개) + 무기 숙련 4개(개별 라인)
     case "WeaponMaster": {
       const abil = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
       if (abil.length>0) lines.push(`능력 +1: ${choice(abil)}`);
       const all = Array.from(new Set(Object.values(WEAPON_KO)));
       const pool = all.filter(x=>!excluded.has(x));
-      const picks = sampleN(pool, 4);
-      for (const p of picks) lines.push(`무기 숙련: ${p}`);
+      sampleN(pool,4).forEach(w=>lines.push(`무기 숙련: ${w}`));
       break;
     }
-
     default: {
-      // 옵션 없는 재주는 그대로
       lines.push(lang==="ko" ? "특성 적용" : "Gain feat benefits");
     }
   }
   return { name, lines };
 }
-
 function rollFeatRandom(excluded: Set<string>, lang: Lang){
   const pick = choice(FEATS_ALL);
   const r = featRollCore(pick.id, lang, excluded);
@@ -891,220 +786,14 @@ function rerollSameFeat(id: FeatId, excluded: Set<string>, lang: Lang){
   const r = featRollCore(id, lang, excluded);
   return { id, name: r.name, lines: r.lines };
 }
-  // ===== 단일 항목만 재굴림 헬퍼 추가 =====
-function rollSingleForFeat(
-  id: FeatId,
-  lang: Lang,
-  excluded: Set<string>,
-  kind: string,                  // "소마법" | "1레벨 주문" | "전투 기법" | "기술 숙련" | "의식 주문" | "무기 숙련" | "능력 +1"
-  existingValues: Set<string>,   // 같은 kind의 이미 선택된 값들(중복 방지)
-): string | null {
-  // 공통 유틸
-  const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
 
-  // 마법 입문 전용 풀 가져오기
-  const getMI = (base: string) =>
-    (base==="Bard"?BARD_SPELLS: base==="Cleric"?CLERIC_SPELLS: base==="Druid"?DRUID_SPELLS:
-     base==="Sorcerer"?SORCERER_SPELLS: base==="Warlock"?WARLOCK_BASE: WIZARD_SPELLS);
-
-  // 후보군 필터 함수
-  const pickOne = (arr: string[], label: string) => {
-    const pool = arr.filter(x=>!excluded.has(x) && !existingValues.has(x));
-    if (pool.length===0) return null;
-    return `${label}: ${choice(pool)}`;
-  };
-
-  // ===== 분기 =====
-  if (id.startsWith("MagicInitiate:")) {
-    const base = id.split(":")[1];
-    const src = getMI(base);
-    if (kind.startsWith("소마법")) {
-      return pickOne((src[0]||[]), "소마법");
-    }
-    if (kind.startsWith("1레벨 주문")) {
-      return pickOne((src[1]||[]), "1레벨 주문");
-    }
-    return null;
-  }
-
-  if (id==="MartialAdept" && kind.startsWith("전투 기법")) {
-    return pickOne(BM_MANEUVERS, "전투 기법");
-  }
-
-  if (id==="RitualCaster" && kind.startsWith("의식 주문")) {
-    return pickOne(["망자와 대화","소환수 찾기","활보","도약 강화","변장","동물과 대화"], "의식 주문");
-  }
-
-  if (id==="Skilled" && kind.startsWith("기술 숙련")) {
-    const all = Object.keys(SK.KO) as SkillKey[];
-    return pickOne(all.map(skillDisp), "기술 숙련");
-  }
-
-  if (id==="WeaponMaster") {
-    if (kind.startsWith("무기 숙련")) {
-      const all = Array.from(new Set(Object.values(WEAPON_KO)));
-      return pickOne(all, "무기 숙련");
-    }
-    if (kind.startsWith("능력 +1")) {
-      const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
-      const pool = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a);
-      return pickOne(pool, "능력 +1");
-    }
-  }
-
-  if (
-    (id==="Athlete" || id==="LightlyArmoured" || id==="HeavilyArmoured" ||
-     id==="MediumArmourMaster" || id==="ModeratelyArmoured" || id==="HeavyArmourMaster" ||
-     id==="TavernBrawler") && kind.startsWith("능력 +1")
-  ) {
-    const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
-    const base = (id==="TavernBrawler") ? ["STR","CON"] : ["STR","DEX"];
-    const pool = base.map(a=>lang==="ko"?abilKoMap[a]:a);
-    return pickOne(pool, "능력 +1");
-  }
-
-  // 나머지(단일 항목만 있는 재주)는 통짜 재굴림으로 처리해도 체감상 동일
-  return null;
+/** ========= 도우미: 클레릭 신앙 풀 ========= */
+function computeClericDeityPool(raceKey: keyof typeof RACES | "-", subraceKo: string): string[] {
+  let pool = [...CLERIC_DEITIES_BASE];
+  if (raceKey === "Githyanki") pool = pool.concat(CLERIC_DEITY_EXTRA_BY_RACE.Githyanki);
+  if (raceKey === "Dwarf" && subraceKo === "드웨가") pool = pool.concat(CLERIC_DEITY_EXTRA_BY_RACE.Dwarf_Duergar);
+  return uniq(pool);
 }
-// ===== 단일 항목만 재굴림 헬퍼 끝 =====
-
-/** ========= 성장 추천 본체 ========= */
-function suggestGrowth(params: {
-  klass: string; sub: string; level: number; count: number;
-  subraceKo?: string;
-  exclude: Set<string>;
-}): string[] {
-  const { klass, sub, level, count, subraceKo, exclude } = params;
-  const out: string[] = [];
-  const already = new Set<string>(); // 같은 레벨 한 번의 추천에서 중복 방지
-
-// Fighter
-if (klass === "Fighter") {
-  // 1레벨: 전투 방식
-  if (level === 1) {
-    out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-  }
-
-  // 전투의 대가: 전투 기법 선택
-  if (sub === "전투의 대가") {
-    const pool = BM_MANEUVERS.filter(x => !exclude.has(x));
-
-    if (level === 3) {
-      const three = sampleN(pool, 3);
-      for (const m of three) out.push(`전투 기법: ${m}`);
-    }
-    if (level === 7 || level === 10) {
-      const two = sampleN(pool, 2);
-      for (const m of two) out.push(`전투 기법: ${m}`);
-    }
-  }
-
-  // 투사: 10레벨에 전투 방식 하나 더
-  if (sub === "투사" && level === 10) {
-    out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-  }
-
-  // 비전 궁수
-  if (sub === "비전 궁수") {
-    if (level === 3) {
-      out.push(`주문: ${choice(["인도","빛","진실의 일격"].filter(x=>!exclude.has(x)))}`);
-      const shots3 = sampleN(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)), 3);
-      for (const s of shots3) out.push(`비전 사격: ${s}`);
-    }
-    if (level === 7 || level === 10) {
-      const shots2 = sampleN(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)), 2);
-      for (const s of shots2) out.push(`비전 사격: ${s}`);
-    }
-  }
-}
-
-
-  // Barbarian — 야생의 심장: 3~12 계속 교체 가능
-  if (klass==="Barbarian" && sub==="야생의 심장" && level>=3) {
-    const hearts = ["곰의 심장","독수리의 심장","엘크의 심장","호랑이의 심장","늑대의 심장"];
-    out.push(`야수의 심장: ${choice(hearts.filter(x=>!exclude.has(x)))}`);
-    if (level===6 || level===10) {
-      const aspects = ["곰","침팬지","악어","독수리","엘크","벌꿀오소리","말","호랑이","늑대","울버린"];
-      out.push(`야수의 상: ${choice(aspects.filter(x=>!exclude.has(x)))}`);
-    }
-  }
-
-  // Ranger — 선호 적/탐험가/전투 방식 + 무리지기 교체
-  if (klass==="Ranger") {
-    if (level===1) {
-      const fav = ["현상금 사냥꾼","장막의 수호자","마법사 파괴자","레인저 나이트","성스러운 추적자"];
-      const exp = ["야수 조련사","도시 추적자","황무지 방랑자:냉기","황무지 방랑자:화염","황무지 방랑자:독"];
-      out.push(`선호하는 적: ${choice(fav.filter(x=>!exclude.has(x)))}`);
-      out.push(`타고난 탐험가: ${choice(exp.filter(x=>!exclude.has(x)))}`);
-    }
-    if (level===2) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-    if (level===6 || level===10) {
-      const fav = ["현상금 사냥꾼","장막의 수호자","마법사 파괴자","레인저 나이트","성스러운 추적자"];
-      const exp = ["야수 조련사","도시 추적자","황무지 방랑자:냉기","황무지 방랑자:화염","황무지 방랑자:독"];
-      out.push(`선호하는 적: ${choice(fav.filter(x=>!exclude.has(x)))}`);
-      out.push(`타고난 탐험가: ${choice(exp.filter(x=>!exclude.has(x)))}`);
-    }
-    if (sub==="무리지기" && level>=3) {
-      const swarms = ["꿀벌 군단","해파리 떼","나방 쇄도"];
-      out.push(`무리지기: ${choice(swarms.filter(x=>!exclude.has(x)))}`);
-    }
-  }
-
-  // 하이 엘프/하프 — 위저드 소마법 1개
-  if ((subraceKo==="하이 엘프" || subraceKo==="하이 하프 엘프") && level>=1) {
-    const wiz0 = WIZARD_SPELLS[0] || [];
-    const pick = choice(wiz0.filter(x=>!exclude.has(x)));
-    if (pick) { out.push(`종족 소마법: ${pick}`); already.add(pick); }
-  }
-
-  // Bard — 마법 비밀 (전승학파 6레벨 ≤3레벨 제한 2개 / 바드 공통 10레벨 2개)
-  if (klass==="Bard") {
-    // 6레벨(전승학파): 0~3레벨에서 2개
-    if (level===6 && sub==="전승학파") {
-      const pool063 = [0,1,2,3].flatMap(lv => BARD_SECRETS[lv] || []).filter(s=>!exclude.has(s));
-      const picks = pickUnique(pool063, 2, already);
-      for (const s of picks) out.push(`마법 비밀: ${s}`);
-    }
-    // 10레벨(공통): 0~5레벨에서 2개
-    if (level===10) {
-      const pool05 = [0,1,2,3,4,5].flatMap(lv => BARD_SECRETS[lv] || []).filter(s=>!exclude.has(s));
-      const picks = pickUnique(pool05, 2, already);
-      for (const s of picks) out.push(`마법 비밀: ${s}`);
-    }
-  }
-
-  // 주문 추천 — 누적 풀에서 중복 없이 뽑기
-  {
-    const pool = collectSpellPool(klass, sub, level);
-    const flat = flattenPool(pool, exclude);
-    const picks = pickUnique(flat, Math.max(0, count), already);
-    for (const s of picks) out.push(`주문: ${s}`);
-
-    // 주문 교체: 실제로 굴려서 추가 주문 1개를 더 제시 (교체는 배울 개수와 별개)
-    const canReplace =
-      (klass==="Ranger" && level>=3) ||
-      (klass==="Bard" && level>=2) ||
-      (klass==="Sorcerer" && level>=2) ||
-      (klass==="Warlock" && level>=2) ||
-      (klass==="Rogue" && sub==="비전 괴도" && level>=4) ||
-      (klass==="Fighter" && sub==="비술 기사" && level>=4) ||
-      (klass==="Monk" && sub==="사원소의 길" && level>=4);
-    const known = knownSpellCount(klass, sub, level);
-    if (canReplace && known>0) {
-      const roll = rand(known) + 1; // 1..known
-      const repPool = flat.filter(s=>!already.has(s));
-      if (repPool.length>0) {
-        const rep = choice(repPool);
-        already.add(rep);
-        out.push(`주문 교체: 기존 ${roll}번째 주문 제거 → 추가: ${rep}`);
-      }
-    }
-  }
-
-  return out;
-}
-
-/** ========= 컴포넌트 ========= */
 export default function App() {
   const [lang, setLang] = useState<Lang>("ko");
 
@@ -1119,15 +808,17 @@ export default function App() {
   const [pbBonus1, setPbBonus1] = useState<Abil | null>(null);
   const [weaponsKO, setWeaponsKO] = useState<string[]>([]);
   const [skills, setSkills] = useState<SkillKey[]>([]);
+  const [deity, setDeity] = useState<string>("");
+
+  // 신체유형
+  const [bodyType, setBodyType] = useState<1|2|3|4>(1);
 
   // 재주
   const [featId, setFeatId] = useState<FeatId | null>(null);
   const [featName, setFeatName] = useState<string>("");
   const [featDetails, setFeatDetails] = useState<string[]>([]);
   const [featExcluded, setFeatExcluded] = useState<Set<string>>(new Set());
-
-]);
-
+  const [featExcludedFeats, setFeatExcludedFeats] = useState<Set<FeatId>>(new Set()); // 재주 자체 제외
 
   // 선택 픽커
   const [showWeaponPicker, setShowWeaponPicker] = useState(false);
@@ -1160,18 +851,38 @@ export default function App() {
   const raceOut  = raceKey  === "-" ? "" : (lang === "ko" ? RACES[raceKey].ko  : String(raceKey));
   const classOut = classKey === "-" ? "" : (lang === "ko" ? CLASSES[classKey].ko : String(classKey));
 
-  /** ===== 롤 핸들러 ===== */
+  /** ===== 랜덤러 ===== */
+  function rollBodyType(forRace: keyof typeof RACES | "-" = raceKey){
+    const cand = allowedBodyTypes(forRace);
+    setBodyType(choice(cand));
+  }
   function rollRace() {
     const keys = Object.keys(RACES) as (keyof typeof RACES)[];
     const r = choice(keys);
+    const sub = RACES[r].subs ? choice(RACES[r].subs!) : "-";
     setRaceKey(r);
-    setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-");
+    setSubraceKo(sub);
+    // 종족 따라 신체유형 유효 범위
+    rollBodyType(r);
+    // 종족 바뀌면 무기/스킬 재계산은 rollAll/버튼에서 따로
+    // 클레릭이면 신앙 풀도 변할 수 있으니 보정
+    if (classKey === "Cleric") {
+      const pool = computeClericDeityPool(r, sub);
+      if (!pool.includes(deity)) setDeity(choice(pool));
+    }
   }
   function rollClass() {
     const keys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
     const k = choice(keys);
+    const sub = choice(CLASSES[k].subclasses);
     setClassKey(k);
-    setSubclassKo(choice(CLASSES[k].subclasses));
+    setSubclassKo(sub);
+    if (k === "Cleric") {
+      const pool = computeClericDeityPool(raceKey, subraceKo);
+      setDeity(choice(pool));
+    } else {
+      setDeity("");
+    }
   }
   function rollBackground() { setBg(choice(BACK_KO)); }
   function rollStatsBtn() {
@@ -1191,42 +902,38 @@ export default function App() {
     setSkills(picks);
   }
   function rollAll() {
-  // 1) 한 번에 로컬로 모두 뽑기
-  const rKey = choice(Object.keys(RACES) as (keyof typeof RACES)[]);
-  const rSub = RACES[rKey].subs ? choice(RACES[rKey].subs!) : "-";
+    // 로컬에서 한번에 뽑고, 그 값으로 종속 계산까지 해서 일관성 확보
+    const rKeys = Object.keys(RACES) as (keyof typeof RACES)[];
+    const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+    const r = choice(rKeys);
+    const sr = RACES[r].subs ? choice(RACES[r].subs!) : "-";
+    const k = choice(cKeys);
+    const sk = choice(CLASSES[k].subclasses);
+    const b = choice(BACK_KO);
+    const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
+    const raceKoLabel  = RACES[r].ko;
+    const classKoLabel = CLASSES[k].ko;
+    const weps = computeWeapons(raceKoLabel, classKoLabel, sk);
+    const sks = computeClassSkills(classKoLabel, b);
+    const deityPick = (k==="Cleric") ? choice(computeClericDeityPool(r, sr)) : "";
 
-  const cKey = choice(Object.keys(CLASSES) as (keyof typeof CLASSES)[]);
-  const cSub = choice(CLASSES[cKey].subclasses);
-
-  const bgPick = choice(BACK_KO);
-
-  const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
-
-  // 2) 로컬 값으로 의존 계산 (상태 읽지 않음)
-  const raceKoLabel  = RACES[rKey].ko;
-  const classKoLabel = CLASSES[cKey].ko;
-  const weapons = computeWeapons(raceKoLabel, classKoLabel, cSub);
-  const skillsPick = computeClassSkills(classKoLabel, bgPick);
-
-  // 3) 한 번에 상태 반영
-  setRaceKey(rKey);       setSubraceKo(rSub);
-  setClassKey(cKey);      setSubclassKo(cSub);
-  setBg(bgPick);
-
-  setPbBonus2(bonus2);    setPbBonus1(bonus1);  setStats(final);
-
-  setWeaponsKO(weapons);
-  setSkills(skillsPick);
-}
-
+    setRaceKey(r); setSubraceKo(sr);
+    setClassKey(k); setSubclassKo(sk);
+    setBg(b);
+    setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
+    setWeaponsKO(weps); setSkills(sks);
+    setDeity(deityPick);
+    rollBodyType(r);
+  }
 
   /** ===== 주사위/승자 ===== */
   function handleRollDice(){
     const parsed = parseDice(diceExpr);
     if (!parsed) { setDiceDetail("형식 오류"); return; }
     const rolls = Array.from({length: parsed.n}, ()=> rand(parsed.m)+1);
-    const sum = rolls.reduce((a,b)=>a+b,0) + parsed.mod;
-    setDiceDetail(`${diceExpr} -> [${rolls.join(", ")}] ${parsed.mod? (parsed.mod>0?`+${parsed.mod}`:parsed.mod):""} = ${sum}`);
+    const modStr = parsed.mod ? (parsed.mod>0?` +${parsed.mod}`:` ${parsed.mod}`) : "";
+    // 합계는 표시하지 않음
+    setDiceDetail(`${diceExpr} -> [${rolls.join(", ")}]${modStr}`);
   }
   function handleVersus(){
     const parts = names.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
@@ -1236,6 +943,93 @@ export default function App() {
   }
 
   /** ===== 성장 추천 ===== */
+  function suggestGrowth(params: {
+    klass: string; sub: string; level: number; count: number;
+    subraceKo?: string;
+    exclude: Set<string>;
+  }): string[] {
+    const { klass, sub, level, count, subraceKo, exclude } = params;
+    const out: string[] = [];
+
+    // Fighter
+    if (klass==="Fighter") {
+      if (level===1) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
+      if (sub==="전투의 대가") {
+        if (level===3) {
+          const pool = BM_MANEUVERS.filter(x=>!exclude.has(x));
+          const picks = sampleN(pool, 3);
+          picks.forEach(p=>out.push(`전투 기법: ${p}`));
+        }
+        if (level===7 || level===10) {
+          const pool = BM_MANEUVERS.filter(x=>!exclude.has(x));
+          const picks = sampleN(pool, 2);
+          picks.forEach(p=>out.push(`전투 기법: ${p}`));
+        }
+      }
+      if (sub==="투사" && level===10) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
+      if (sub==="비전 궁수") {
+        if (level===3) {
+          out.push(`주문: ${choice(["인도","빛","진실의 일격"].filter(x=>!exclude.has(x)))}`);
+          const shots = ELDRITCH_SHOTS.filter(x=>!exclude.has(x));
+          out.push(`비전 사격: ${choice(shots)}`);
+          out.push(`비전 사격: ${choice(shots)}`);
+          out.push(`비전 사격: ${choice(shots)}`);
+        }
+        if (level===7 || level===10) out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+      }
+    }
+
+    // Barbarian — 야생의 심장
+    if (klass==="Barbarian" && sub==="야생의 심장" && level>=3) {
+      const hearts = ["곰의 심장","독수리의 심장","엘크의 심장","호랑이의 심장","늑대의 심장"];
+      out.push(`야수의 심장: ${choice(hearts.filter(x=>!exclude.has(x)))}`);
+      if (level===6 || level===10) {
+        const aspects = ["곰","침팬지","악어","독수리","엘크","벌꿀오소리","말","호랑이","늑대","울버린"];
+        out.push(`야수의 상: ${choice(aspects.filter(x=>!exclude.has(x)))}`);
+      }
+    }
+
+    // Ranger
+    if (klass==="Ranger") {
+      if (level===1) {
+        const fav = ["현상금 사냥꾼","장막의 수호자","마법사 파괴자","레인저 나이트","성스러운 추적자"];
+        const exp = ["야수 조련사","도시 추적자","황무지 방랑자:냉기","황무지 방랑자:화염","황무지 방랑자:독"];
+        out.push(`선호하는 적: ${choice(fav.filter(x=>!exclude.has(x)))}`);
+        out.push(`타고난 탐험가: ${choice(exp.filter(x=>!exclude.has(x)))}`);
+      }
+      if (level===2) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
+      if (level===6 || level===10) {
+        const fav = ["현상금 사냥꾼","장막의 수호자","마법사 파괴자","레인저 나이트","성스러운 추적자"];
+        const exp = ["야수 조련사","도시 추적자","황무지 방랑자:냉기","황무지 방랑자:화염","황무지 방랑자:독"];
+        out.push(`선호하는 적: ${choice(fav.filter(x=>!exclude.has(x)))}`);
+        out.push(`타고난 탐험가: ${choice(exp.filter(x=>!exclude.has(x)))}`);
+      }
+      if (sub==="무리지기" && level>=3) {
+        const swarms = ["꿀벌 군단","해파리 떼","나방 쇄도"];
+        out.push(`무리지기: ${choice(swarms.filter(x=>!exclude.has(x)))}`);
+      }
+    }
+
+    // 하이 엘프/하프 — 위저드 소마법 1개
+    if ((subraceKo==="하이 엘프" || subraceKo==="하이 하프 엘프") && level>=1) {
+      const wiz0 = WIZARD_SPELLS[0] || [];
+      out.push(`종족 소마법: ${choice(wiz0.filter(x=>!exclude.has(x)))}`);
+    }
+
+    // 주문 추천 — 누적 풀에서 중복 없이 뽑기
+    {
+      const pool = collectSpellPool(klass, sub, level);
+      const flat = flattenPool(pool, exclude);
+      const already = new Set<string>();
+      const picks = pickUnique(flat, Math.max(0, count), already);
+      for (const s of picks) out.push(`주문: ${s}`);
+    }
+
+    const rep = buildReplaceLine(klass, sub, level);
+    if (rep) out.push(rep);
+
+    return out;
+  }
   function doSuggestGrowth() {
     if (growClass === "-" || growLevel < 1) { setGrowResult([]); return; }
     const list = suggestGrowth({
@@ -1272,69 +1066,25 @@ export default function App() {
 
   /** ===== 재주 ===== */
   function rollFeatBtn(){
-    const r = rollFeatRandom(featExcluded, lang);
+    // 재주 자체 제외 적용
+    const pool = FEATS_ALL.filter(f=>!featExcludedFeats.has(f.id));
+    const pickId = choice(pool).id;
+    const r = rerollSameFeat(pickId, featExcluded, lang);
     setFeatId(r.id);
     setFeatName(r.name);
     setFeatDetails(r.lines);
   }
- // ===== App() 내부: excludeFeatItem 교체 =====
-function excludeFeatItem(line: string){
-  // 1) 클릭한 항목만 제외 집합에 추가
-  const val = extractTail(line);
-  const next = new Set(featExcluded); 
-  next.add(val);
-  setFeatExcluded(next);
-
-  // 2) 재주가 정해져 있지 않으면 전체 리롤
-  if (!featId) { 
-    rollFeatBtn();
-    return;
+  function excludeFeatItem(line: string){
+    // 개별 항목만 제외하고 즉시 해당 항목만 리롤
+    const val = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim();
+    const next = new Set(featExcluded); next.add(val);
+    setFeatExcluded(next);
+    if (featId){
+      const r = rerollSameFeat(featId, next, lang);
+      setFeatName(r.name);
+      setFeatDetails(r.lines);
+    }
   }
-
-  // 3) 같은 재주 안에서 "그 줄만" 리롤 시도
-  const replaced = rerollFeatLine(featId, line, next, lang);
-
-  if (replaced) {
-    // 3-a) 성공: 해당 줄만 교체
-    setFeatDetails(prev => prev.map(x => x === line ? replaced : x));
-  } else {
-    // 3-b) 실패: (후보가 0개 등) 같은 재주의 전체 옵션을 다시 굴림
-    const r = rerollSameFeat(featId, next, lang);
-    setFeatName(r.name);
-    setFeatDetails(r.lines);
-  }
-}
-
-
-  // 1) 제외 목록에 '아이템'만 추가
-  const nextExcluded = new Set(featExcluded); 
-  nextExcluded.add(value);
-  setFeatExcluded(nextExcluded);
-
-  // 2) 현재 라인 제거
-  const idx = featDetails.findIndex(x => x === detailLine);
-  const nextLines = [...featDetails];
-  if (idx >= 0) nextLines.splice(idx, 1);
-
-  // 3) 같은 kind로 이미 선택된 값들(중복 방지)
-  const existingOfKind = new Set(
-    nextLines
-      .filter(l => l.startsWith(kind + ":"))
-      .map(l => l.split(":").slice(1).join(":").trim())
-  );
-
-  // 4) 해당 항목만 재굴림
-  if (featId) {
-    const single = rollSingleForFeat(featId, lang, nextExcluded, kind, existingOfKind);
-    if (single) nextLines.splice(Math.max(idx, 0), 0, single);
-    setFeatDetails(nextLines);
-  } else {
-    // 안전장치: 혹시 featId가 비었으면 통짜 재굴림
-    rollFeatBtn();
-  }
-}
-
-
   function unexcludeFeatItem(val: string){
     const next = new Set(featExcluded); next.delete(val);
     setFeatExcluded(next);
@@ -1342,15 +1092,26 @@ function excludeFeatItem(line: string){
       const r = rerollSameFeat(featId, next, lang);
       setFeatName(r.name);
       setFeatDetails(r.lines);
-    } else {
-      rollFeatBtn();
     }
   }
+  function excludeWholeFeat(){
+    if (!featId) return;
+    const n = new Set(featExcludedFeats); n.add(featId);
+    setFeatExcludedFeats(n);
+    // 즉시 다른 재주로 교체
+    rollFeatBtn();
+  }
 
-  /** ===== 옵션 ===== */
-  //const raceOptions = Object.keys(RACES) as (keyof typeof RACES)[];
+  /** ===== 옵션/선택 ===== */
+  const raceOptions = Object.keys(RACES) as (keyof typeof RACES)[];
   const classOptions = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
   const allSkills = Object.keys(SK.KO) as SkillKey[];
+
+  // 종족 바뀌어 허용 신체유형 축소 시 보정
+  useEffect(()=>{
+    const cand = allowedBodyTypes(raceKey);
+    if (!cand.includes(bodyType)) setBodyType(cand[0]);
+  },[raceKey, bodyType]);
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", justifyContent:"center", alignItems:"flex-start", background:"#fff" }}>
@@ -1377,13 +1138,21 @@ function excludeFeatItem(line: string){
               <div style={{ display:"grid", gridTemplateColumns:"120px 1fr", rowGap:8 }}>
                 <div style={{ color:"#6b7280" }}>{T.race}</div>
                 <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-                  <div>{raceOut}{subraceKo !== "-" ? ` / ${subraceKo}` : ""}</div>
+                  <div>{raceOut}{subraceKo !== "-" && subraceKo ? ` / ${subraceKo}` : ""}</div>
                 </div>
 
                 <div style={{ color:"#6b7280" }}>{T.klass}</div>
                 <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-                  <div>{classOut}{subclassKo !== "-" ? ` / ${subclassKo}` : ""}</div>
+                  <div>{classOut}{subclassKo !== "-" && subclassKo ? ` / ${subclassKo}` : ""}</div>
                 </div>
+
+                {/* 신앙 (클레릭일 때만 표시) */}
+                {classKey==="Cleric" && (
+                  <>
+                    <div style={{ color:"#6b7280" }}>{T.deity}</div>
+                    <div>{deity}</div>
+                  </>
+                )}
 
                 <div style={{ color:"#6b7280" }}>{T.background}</div>
                 <div>{bgLabel(bg, lang)}</div>
@@ -1393,6 +1162,9 @@ function excludeFeatItem(line: string){
 
                 <div style={{ color:"#6b7280" }}>{T.skills}</div>
                 <div>{skills.map(skillLabel).join(", ")}</div>
+
+                <div style={{ color:"#6b7280" }}>{T.bodyType}</div>
+                <div>{bodyTypeLabel(bodyType)}</div>
               </div>
 
               {/* 능력치 */}
@@ -1415,13 +1187,14 @@ function excludeFeatItem(line: string){
               {/* 조작 */}
               <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
                 <button onClick={rollAll} style={btnPrimary}>{T.rollAll}</button>
-                <button onClick={()=>{rollRace(); setTimeout(rollWeaponsBtn,0);}} style={btn}>{T.onlyRace}</button>
-                <button onClick={()=>{rollClass(); setTimeout(()=>{rollWeaponsBtn(); rollSkillsBtn();},0);}} style={btn}>{T.onlyClass}</button>
+                <button onClick={()=>{rollRace(); setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyRace}</button>
+                <button onClick={()=>{rollClass(); setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyClass}</button>
                 <button onClick={()=>{rollBackground(); setTimeout(rollSkillsBtn,0);}} style={btn}>{T.onlyBG}</button>
                 <button onClick={rollStatsBtn} style={btn}>{T.rollStats}</button>
                 <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
                 <button onClick={rollAny2Weapons} style={btn}>{T.any2Weapons}</button>
                 <button onClick={rollSkillsBtn} style={btn}>{T.rollSkills}</button>
+                <button onClick={()=>rollBodyType()} style={btn}>{T.onlyBody}</button>
               </div>
             </section>
 
@@ -1431,58 +1204,32 @@ function excludeFeatItem(line: string){
               <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
                 <button onClick={rollFeatBtn} style={btn}>{T.rollFeat}</button>
                 {featName && <div style={{ fontWeight:700 }}>{featName}</div>}
+                {featId && (
+                  <button style={btnSecondary} onClick={excludeWholeFeat}>재주 제외</button>
+                )}
               </div>
-             {featDetails.length>0 && (
-  <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
-    {featDetails.map((d,i)=>(
-      <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
-        <span>• {d}</span>
-        {!(featId && NO_SUBOPTION_FEATS.has(featId)) && (
-          <button
-            style={btnSecondary}
-            onClick={()=>excludeFeatItem(d)}
-          >
-            {T.exclude}
-          </button>
-        )}
-      </div>
-    ))}
-
-    {Array.from(featExcluded).length>0 && (
-      <div style={{ marginTop:6 }}>
-        <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-          {Array.from(featExcluded).map(x=>(
-            <button
-              key={x}
-              style={btnSecondary}
-              onClick={()=>unexcludeFeatItem(x)}
-            >
-              {T.clear}: {x}
-            </button>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-)}
-
-
-    {Array.from(featExcluded).length>0 && (
-      <div style={{ marginTop:6 }}>
-        <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-          {Array.from(featExcluded).map(x=>(
-            <button key={x} style={btnSecondary} onClick={()=>unexcludeFeatItem(x)}>
-              {T.clear}: {x}
-            </button>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-)}
-
+              {featDetails.length>0 && (
+                <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
+                  {featDetails.map((d,i)=>(
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span>• {d}</span>
+                      {!(featId && NO_SUBOPTION_FEATS.has(featId)) && (
+                        <button style={btnSecondary} onClick={()=>excludeFeatItem(d)}>{T.exclude}</button>
+                      )}
+                    </div>
+                  ))}
+                  {Array.from(featExcluded).length>0 && (
+                    <div style={{ marginTop:6 }}>
+                      <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        {Array.from(featExcluded).map(x=>(
+                          <button key={x} style={btnSecondary} onClick={()=>unexcludeFeatItem(x)}>{T.clear}: {x}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             {/* 주사위 */}
@@ -1517,89 +1264,51 @@ function excludeFeatItem(line: string){
             <section style={{ border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
               <h3 style={{ fontSize:18, fontWeight:700, margin:"0 0 12px" }}>{T.manualPanel}</h3>
 
-          {/* 종족 (한 줄 정리) */}
-<div style={rowTight}>
-  <label style={label}>{T.race}</label>
+              {/* 종족 */}
+              <div style={rowTight}>
+                <label style={label}>{T.race}</label>
+                <select value={raceKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof RACES | "-"; setRaceKey(k); const sr = k==="-"?"-":(RACES[k].subs?.[0] ?? "-"); setSubraceKo(sr); rollBodyType(k); if (classKey==="Cleric"){ const pool=computeClericDeityPool(k, sr); if (!pool.includes(deity)) setDeity(choice(pool)); } }} style={{...select, minWidth:200, maxWidth:220}}>
+                  <option value="-">-</option>
+                  {raceOptions.map(k=><option key={k} value={k}>{lang==="ko"?RACES[k].ko:k}</option>)}
+                </select>
+                <select disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)} value={subraceKo} onChange={e=>{ setSubraceKo(e.target.value); if (classKey==="Cleric"){ const pool=computeClericDeityPool(raceKey, e.target.value); if (!pool.includes(deity)) setDeity(choice(pool)); } }} style={{...select, minWidth:180, maxWidth:200}}>
+                  {(raceKey==="-" || !RACES[raceKey].subs) ? <option value="-">-</option> : RACES[raceKey].subs!.map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
+                <span style={{ ...nowrap, color:"#6b7280" }}>{L[lang].locks}</span>
+                <input type="checkbox" style={{ height:CTRL_H }}/>
+              </div>
 
-  <select
-    value={raceKey}
-    onChange={(e:any)=>{ const k = e.target.value as keyof typeof RACES | "-"; setRaceKey(k); setSubraceKo(k==="-"?"-":(RACES[k].subs?.[0] ?? "-")); }}
-    style={{ ...select, width: 140 }}
-  >
-    <option value="-">-</option>
-    {Object.keys(RACES).map(k => (
-      <option key={k} value={k}>{lang==="ko" ? RACES[k as keyof typeof RACES].ko : k}</option>
-    ))}
-  </select>
+              {/* 클래스 */}
+              <div style={rowTight}>
+                <label style={label}>{T.klass}</label>
+                <select value={classKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof CLASSES | "-"; setClassKey(k); const sub = k==="-"?"-":CLASSES[k].subclasses[0]; setSubclassKo(sub); if (k==="Cleric"){ const pool=computeClericDeityPool(raceKey, subraceKo); setDeity(choice(pool)); } else setDeity(""); }} style={{...select, minWidth:220, maxWidth:240}}>
+                  <option value="-">-</option>
+                  {classOptions.map(k=><option key={k} value={k}>{lang==="ko"?CLASSES[k].ko:k}</option>)}
+                </select>
+                <select disabled={classKey==="-" } value={subclassKo} onChange={e=>setSubclassKo(e.target.value)} style={{...select, minWidth:220, maxWidth:240}}>
+                  {classKey==="-" ? <option value="-">-</option> : CLASSES[classKey].subclasses.map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
+                <span style={{ ...nowrap, color:"#6b7280" }}>{L[lang].locks}</span>
+                <input type="checkbox" style={{ height:CTRL_H }}/>
+              </div>
 
-  <select
-    disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)}
-    value={subraceKo}
-    onChange={e=>setSubraceKo(e.target.value)}
-    style={{ ...select, width: 140 }}
-  >
-    {(raceKey==="-" || !RACES[raceKey].subs)
-      ? <option value="-">-</option>
-      : RACES[raceKey].subs!.map(s => <option key={s} value={s}>{s}</option>)
-    }
-  </select>
+              {/* 출신 */}
+              <div style={rowTight}>
+                <label style={label}>{T.background}</label>
+                <select value={bg} onChange={(e:any)=>setBg(e.target.value as Background)} style={{...select, minWidth:240, maxWidth:260}}>
+                  <option value="-">-</option>
+                  {BACK_KO.map(b=><option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
+                </select>
+                <span style={{ ...nowrap, color:"#6b7280" }}>{L[lang].locks}</span>
+                <input type="checkbox" style={{ height:CTRL_H }}/>
+              </div>
 
-  <span style={{ ...nowrap, color:"#6b7280", marginLeft: 8 }}>{L[lang].locks}</span>
-  <input type="checkbox" style={{ width: 16, height: 16, marginLeft: 4 }} />
-</div>
-
-
-       {/* 클래스 (한 줄 정리) */}
-<div style={rowTight}>
-  <label style={label}>{T.klass}</label>
-
-  <select
-    value={classKey}
-    onChange={(e:any)=>{ const k = e.target.value as keyof typeof CLASSES | "-"; setClassKey(k); setSubclassKo(k==="-"?"-":CLASSES[k].subclasses[0]); }}
-    style={{ ...select, width: 160 }}
-  >
-    <option value="-">-</option>
-    {Object.keys(CLASSES).map(k => (
-      <option key={k} value={k}>{lang==="ko" ? CLASSES[k as keyof typeof CLASSES].ko : k}</option>
-    ))}
-  </select>
-
-  <select
-    disabled={classKey==="-" }
-    value={subclassKo}
-    onChange={e=>setSubclassKo(e.target.value)}
-    style={{ ...select, width: 160 }}
-  >
-    {classKey==="-" ? (
-      <option value="-">-</option>
-    ) : (
-      CLASSES[classKey].subclasses.map(s => <option key={s} value={s}>{s}</option>)
-    )}
-  </select>
-
-  <span style={{ ...nowrap, color:"#6b7280", marginLeft: 8 }}>{L[lang].locks}</span>
-  <input type="checkbox" style={{ width: 16, height: 16, marginLeft: 4 }} />
-</div>
-
-{/* 출신 (한 줄 정리) */}
-<div style={rowTight}>
-  <label style={label}>{T.background}</label>
-
-  <select
-    value={bg}
-    onChange={(e:any)=>setBg(e.target.value as any)}
-    style={{ ...select, width: 200 }}
-  >
-    <option value="-">-</option>
-    {Object.keys(BACK_EN).map((ko) => (
-      <option key={ko} value={ko}>{lang==="ko" ? ko : BACK_EN[ko as keyof typeof BACK_EN]}</option>
-    ))}
-  </select>
-
-  <span style={{ ...nowrap, color:"#6b7280", marginLeft: 8 }}>{L[lang].locks}</span>
-  <input type="checkbox" style={{ width: 16, height: 16, marginLeft: 4 }} />
-</div>
-
+              {/* 신체유형 (표시만, 버튼은 좌측 결과에 있음) */}
+              <div style={rowTight}>
+                <label style={label}>{T.bodyType}</label>
+                <div style={{ padding:"0 8px" }}>{bodyTypeLabel(bodyType)}</div>
+                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</button>
+              </div>
 
               {/* 무기 선택 */}
               <div style={row}>
