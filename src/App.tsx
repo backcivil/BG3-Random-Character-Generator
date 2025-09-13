@@ -1098,13 +1098,14 @@ useEffect(() => {
 
 
   /** ===== 주사위/승자 ===== */
-  function handleRollDice(){
-    const parsed = parseDice(diceExpr);
-    if (!parsed) { setDiceDetail("형식 오류"); return; }
-    const rolls = Array.from({length: parsed.n}, ()=> rand(parsed.m)+1);
-    const sum = rolls.reduce((a,b)=>a+b,0) + parsed.mod;
-    setDiceDetail(`${diceExpr} -> [${rolls.join(", ")}] ${parsed.mod? (parsed.mod>0?`+${parsed.mod}`:parsed.mod):""} = ${sum}`);
-  }
+ function handleRollDice(){
+  const parsed = parseDice(diceExpr);
+  if (!parsed) { setDiceDetail("형식 오류"); return; }
+  const rolls = Array.from({length: parsed.n}, ()=> rand(parsed.m)+1);
+  // 합계·수정자 출력 제거, 굴린 눈만 표시
+  setDiceDetail(`${diceExpr} -> [${rolls.join(", ")}]`);
+}
+
   function handleVersus(){
     const parts = names.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
     if (parts.length<2){ setVsLines(["2명 이상 입력"]); setVsWinner(""); return; }
