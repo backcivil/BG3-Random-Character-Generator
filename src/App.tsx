@@ -1189,7 +1189,7 @@ export default function App() {
                 <button onClick={rollAll} style={btnPrimary}>{T.rollAll}</button>
                 <button onClick={()=>{rollRace(); window.setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyRace}</button>
                 <button onClick={()=>{rollClass(); window.setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);}} style={btn}>{T.onlyClass}</button>
-                <button onClick={()=>{rollBackground(); setTimeout(rollSkillsBtn,0);}} style={btn}>{T.onlyBG}</button>
+                <button onClick={()=>{rollBackground();window.setTimeout(rollSkillsBtn,0);}} style={btn}>{T.onlyBG}</button>
                 <button onClick={rollStatsBtn} style={btn}>{T.rollStats}</button>
                 <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
                 <button onClick={rollAny2Weapons} style={btn}>{T.any2Weapons}</button>
