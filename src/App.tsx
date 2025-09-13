@@ -1069,40 +1069,40 @@ export default function App() {
     setFeatDetails(r.lines);
   }
  // ===== App() 내부: excludeFeatItem 교체 =====
-function excludeFeatItem(line: string){
-  // line 형태: `${featName}: ${d}`  → d만 뽑아낸 뒤 kind / value 분리
-  const afterFeat = line.includes(":") ? line.split(":").slice(1).join(":").trim() : line.trim(); // "소마법: 화염살"
-  const [kindRaw, ...rest] = afterFeat.split(":");
-  const kind = (kindRaw || "").trim();                         // 예) "소마법"
-  const value = rest.join(":").trim();                         // 예) "화염살"
+function excludeFeatItem(detailLine: string){
+  // detailLine 예: "소마법: 신성한 불길" | "1레벨 주문: 신앙의 방패" | "기술 숙련: 통찰" ...
+  const [kindRaw, ...rest] = detailLine.split(":");
+  const kind = (kindRaw || "").trim();           // "소마법", "1레벨 주문", "기술 숙련", "무기 숙련", "능력 +1", "의식 주문", "전투 기법" 등
+  const value = rest.join(":").trim() || kind;   // "신성한 불길" 등
 
-  // 제외 목록에 value만 저장 (아이템 단위)
-  const nextExcluded = new Set(featExcluded); nextExcluded.add(value);
+  // 1) 제외 목록에 '아이템'만 추가
+  const nextExcluded = new Set(featExcluded); 
+  nextExcluded.add(value);
   setFeatExcluded(nextExcluded);
 
-  // 현재 라인 제거
-  const idx = featDetails.findIndex(x => x === afterFeat);
+  // 2) 현재 라인 제거
+  const idx = featDetails.findIndex(x => x === detailLine);
   const nextLines = [...featDetails];
   if (idx >= 0) nextLines.splice(idx, 1);
 
-  // 같은 kind로 이미 선택된 값들 (중복 방지)
+  // 3) 같은 kind로 이미 선택된 값들(중복 방지)
   const existingOfKind = new Set(
     nextLines
       .filter(l => l.startsWith(kind + ":"))
       .map(l => l.split(":").slice(1).join(":").trim())
   );
 
-  // 해당 항목만 재굴림 시도
+  // 4) 해당 항목만 재굴림
   if (featId) {
     const single = rollSingleForFeat(featId, lang, nextExcluded, kind, existingOfKind);
     if (single) nextLines.splice(Math.max(idx, 0), 0, single);
     setFeatDetails(nextLines);
   } else {
-    // 혹시 featId가 비어있다면 통짜 재굴림
+    // 안전장치: 혹시 featId가 비었으면 통짜 재굴림
     rollFeatBtn();
   }
 }
-// ===== excludeFeatItem 교체 끝 =====
+
 
   function unexcludeFeatItem(val: string){
     const next = new Set(featExcluded); next.delete(val);
@@ -1206,7 +1206,7 @@ function excludeFeatItem(line: string){
                   {featDetails.map((d,i)=>(
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
                       <span>• {d}</span>
-                      <button style={btnSecondary} onClick={()=>excludeFeatItem(`${featName}: ${d}`)}>{T.exclude}</button>
+                      <button style={btnSecondary} onClick={()=>excludeFeatItem(d)}>{T.exclude}</button>
                     </div>
                   ))}
                   {Array.from(featExcluded).length>0 && (
