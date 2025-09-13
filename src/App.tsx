@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 /** ========= 유틸 ========= */
 const rand = (n: number) => Math.floor(Math.random() * n);
@@ -44,7 +44,7 @@ const L = {
     dicePH: "예: 1d4, 3d6+2",
     rollDice: "굴리기",
     vsTitle: "승자 정하기",
-    vsPH: "공백 또는 쉼표로 구분 (레드 유히 함마김 활잽이)",
+    vsPH: "공백 또는 쉼표로 구분",
     vsRoll: "굴리기 (1d20)",
     winner: "승자",
     manualPanel: "수동 선택 & 고정",
@@ -136,7 +136,7 @@ const RACES: Record<string, { ko: string; subs?: string[] }> = {
   Human:{ko:"인간"},
   Elf:{ko:"엘프", subs:["하이 엘프","우드 엘프"]},
   Tiefling:{ko:"티플링", subs:["아스모데우스 티플링","메피스토펠레스 티플링","자리엘 티플링"]},
-  Drow:{ko:"드로우", subs:["롤쓰 스원 드로우","셀다린 드로우"]},
+  Drow:{ko:"드로우", subs:["롤스 스원 드로우","셀다린 드로우"]},
   Githyanki:{ko:"기스양키"},
   Dwarf:{ko:"드워프", subs:["골드 드워프","실드 드워프","드웨가"]},
   "Half-Elf":{ko:"하프엘프", subs:["하이 하프 엘프","우드 하프 엘프","드로우 하프 엘프"]},
@@ -179,11 +179,11 @@ const CLASS_SK_CHOICE: Record<string, { n: number; list: SkillKey[] }> = {
   파이터:{n:2, list:["Acrobatics","Animal","Athletics","History","Insight","Intimidation","Perception","Survival"]},
   몽크:{n:2, list:["Acrobatics","Athletics","Insight","History","Religion","Stealth"]},
   팔라딘:{n:2, list:["Athletics","Insight","Intimidation","Medicine","Persuasion","Religion"]},
-  레인저:{n:3, list:["Animal","Athletics","Insight","Investigation","Nature","Perception","Stealth","Survival"]},
-  로그:{n:4, list:["Acrobatics","Athletics","Deception","Insight","Intimidation","Investigation","Perception","Performance","Persuasion","Sleight","Stealth"]},
+  레인저:{n:3, list:["Animal","Athletics","Insight","Investigation","Nature","Perception","Stealth","Survival"] as any},
+  로그:{n:4, list:["Acrobatics","Athletics","Deception","Insight","Intimidation","Investigation","Perception","Performance","Persuasion","Sleight","Stealth"] as any},
   소서러:{n:2, list:["Arcana","Deception","Insight","Intimidation","Persuasion","Religion"]},
-  워락:{n:2, list:["Arcana","Deception","History","Intimidation","Investigation","Nature","Religion"]},
-  위저드:{n:2, list:["Arcana","History","Insight","Investigation","Medicine","Religion"]},
+  워락:{n:2, list:["Arcana","Deception","History","Intimidation","Investigation","Nature","Religion"] as any},
+  위저드:{n:2, list:["Arcana","History","Insight","Investigation","Medicine","Religion"] as any},
 };
 
 /** ========= 무기 ========= */
@@ -203,10 +203,6 @@ const WEAPON_KO: Record<(typeof ALL_WEAPONS_EN)[number],string> = { ...SIMPLE_KO
 const SHIELD_KO = "방패";
 const UNARMED_KO = "비무장 공격";
 
-// 타입 고정용 값 배열 (unknown[] 방지)
-const SIMPLE_KO_VALUES = Object.values(SIMPLE_KO) as string[];
-const MARTIAL_KO_VALUES = Object.values(MARTIAL_KO) as string[];
-
 const RACE_WEAP_KO: Record<string,string[]> = {
   인간:["언월도","미늘창","장창","창"],
   하프엘프:["언월도","미늘창","장창","창"],
@@ -218,32 +214,27 @@ const RACE_WEAP_KO: Record<string,string[]> = {
 const RACE_SHIELD = new Set(["인간","하프엘프"]);
 const CLASS_WEAP_KO: Record<string,string[]> = {
   드루이드:["곤봉","낫","단검","언월도","육척봉","투창","창","철퇴"],
-  몽크:[...SIMPLE_KO_VALUES, "소검"],
-  바드:[...SIMPLE_KO_VALUES, "레이피어","소검","장검","손 쇠뇌"],
-  로그:[...SIMPLE_KO_VALUES, "레이피어","소검","장검","손 쇠뇌"],
+  몽크:Object.values(SIMPLE_KO).concat("소검"),
+  바드:Object.values(SIMPLE_KO).concat(["레이피어","소검","장검","손 쇠뇌"]),
+  로그:Object.values(SIMPLE_KO).concat(["레이피어","소검","장검","손 쇠뇌"]),
   소서러:["단검","육척봉","경쇠뇌"],
   위저드:["단검","육척봉","경쇠뇌"],
-  워락:[...SIMPLE_KO_VALUES],
-  클레릭:[...SIMPLE_KO_VALUES],
-  레인저:[...SIMPLE_KO_VALUES, ...MARTIAL_KO_VALUES],
-  바바리안:[...SIMPLE_KO_VALUES, ...MARTIAL_KO_VALUES],
-  팔라딘:[...SIMPLE_KO_VALUES, ...MARTIAL_KО_VALUES], // <<<<<< 주의: 아스키 O 사용!
-  파이터:[...SIMPLE_KО_VALUES, ...MARTIAL_KO_VALUES], // <<<<<< 주의: 아스키 O 사용!
+  워락:Object.values(SIMPLE_KO),
+  클레릭:Object.values(SIMPLE_KO),
+  레인저:Object.values(SIMPLE_KO).concat(Object.values(MARTIAL_KO)),
+  바바리안:Object.values(SIMPLE_KO).concat(Object.values(MARTIAL_KO)),
+  팔라딘:Object.values(SIMPLE_KO).concat(Object.values(MARTIAL_KO)),
+  파이터:Object.values(SIMPLE_KO).concat(Object.values(MARTIAL_KO)),
 };
-// 위 두 줄에 실수로 키릴문자 O가 들어가면 에러납니다. 반드시 ASCII O 로 작성하세요.
-CLASS_WEAP_KO["팔라딘"] = [...SIMPLE_KO_VALUES, ...MARTIAL_KO_VALUES];
-CLASS_WEAP_KO["파이터"] = [...SIMPLE_KO_VALUES, ...MARTIAL_KO_VALUES];
-
 const CLASS_SHIELD = new Set(["파이터","팔라딘","클레릭","레인저","바바리안","드루이드"]);
 
 // 서브클래스/권역 특수 무기 숙련
 const SUBCLASS_EXTRA_WEAPONS: Record<string,string[]> = {
-  "클레릭:폭풍 권역": MARTIAL_KO_VALUES,
-  "클레릭:전쟁 권역": MARTIAL_KO_VALUES,
-  "클레릭:죽음 권역": MARTIAL_KО_VALUES, // 동일 주의
+  "클레릭:폭풍 권역": Object.values(MARTIAL_KO),
+  "클레릭:전쟁 권역": Object.values(MARTIAL_KO),
+  "클레릭:죽음 권역": Object.values(MARTIAL_KO),
   "위저드:칼날 노래": ["단검","장검","레이피어","협도","소검","낫"],
 };
-SUBCLASS_EXTRA_WEAPONS["클레릭:죽음 권역"] = MARTIAL_KO_VALUES;
 
 // ====== 주문 풀(요약) : 패치8 포함 ======
 const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"];
@@ -260,8 +251,7 @@ const CLERIC_DEITY_EXTRA_BY_RACE = {
   Dwarf_Duergar: ["라더궈"],
 } as const;
 
-/** ====== 클래스별 주문 목록 ====== */
-// 바드
+/** ========= 클래스별 주문 목록 ========= */
 const BARD_SPELLS = {
   0: ["신랄한 조롱","도검 결계","마법사의 손","진실의 일격","친구","춤추는 빛","빛","하급 환영", ...CANTRIPS_PATCH8],
   1: ["동물 교감","액운","인간형 매혹","상처 치료","변장","불협화음의 속삭임","요정불","깃털 낙하","치유의 단어","영웅심","활보","수면","동물과 대화","타샤의 끔찍한 웃음","천둥파"],
@@ -271,7 +261,7 @@ const BARD_SPELLS = {
   5: ["인간형 지배","상급 회복","괴물 포박","다중 상처 치료","이차원인 속박","외견"],
   6: ["깨무는 눈길","오토의 참을 수 없는 춤"],
 };
-// 클레릭
+
 const CLERIC_SPELLS = {
   0: ["기적술","신성한 불길","인도","저항","빛","도검 결계","불꽃 생성"],
   1: ["신앙의 방패","선악 보호","성역","액운","명령","축복","상처 치료","치유의 단어","유도 화살","상처 유발","물 생성 또는 제거"],
@@ -281,7 +271,7 @@ const CLERIC_SPELLS = {
   5: ["선악 해제","이차원인 속박","상급 회복","곤충 떼","화염 일격","다중 상처 치료","감염"],
   6: ["영웅의 연회","이차원인 아군","검 방벽","치유","언데드 생성","해악"],
 };
-// 드루이드
+
 const DRUID_SPELLS = {
   0: ["인도","독 분사","불꽃 생성","저항","마법 곤봉","가시 채찍"],
   1: ["얼음 칼","휘감기","안개구름","동물과 대화","동물 교감","인간형 매혹","천둥파","치유의 단어","상처 치료","요정불","도약 강화","활보","맛있는 열매","물 생성 또는 제거"],
@@ -291,7 +281,7 @@ const DRUID_SPELLS = {
   5: ["상급 회복","이차원인 속박","정령 소환","곤충 떼","다중 상처 치료","바위의 벽","감염"],
   6: ["영웅의 연회","가시의 벽","치유","햇살","바람 걸음"],
 };
-// 소서러
+
 const SORCERER_SPELLS = {
   0: ["도검 결계","산성 거품","마법사의 손","독 분사","진실의 일격","친구","춤추는 빛","화염살","빛","서리 광선","전격의 손아귀","하급 환영","뼛속 냉기", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","안개구름","얼음 칼","도약 강화","마법사의 갑옷","마력탄","독 광선","방어막","수면","천둥파","마녀의 화살"],
@@ -301,7 +291,7 @@ const SORCERER_SPELLS = {
   5: ["죽음 구름","냉기 분사","인간형 지배","괴물 포박","곤충 떼","외견","염력","바위의 벽"],
   6: ["비전 관문","연쇄 번개","죽음의 원","분해","깨무는 눈길","무적의 구체","햇살"],
 };
-// 워락
+
 const WARLOCK_BASE = {
   0: ["도검 결계","뼛속 냉기","섬뜩한 파동","친구","마법사의 손","하급 환영","독 분사","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["아거티스의 갑옷","하다르의 팔","인간형 매혹","신속 후퇴","지옥의 질책","주술","선악 보호","마녀의 화살"],
@@ -314,15 +304,8 @@ const WARLOCK_EXP: Record<string, Record<number,string[]>> = {
   "마족": { 1:["불타는 손길","명령"], 3:["실명","작열 광선"], 5:["화염구","악취 구름"], 7:["화염 방패","화염 벽"], 9:["냉기 분사","화염 일격"] },
   "고대의 지배자": { 1:["불협화음의 속삭임","타샤의 끔찍한 웃음"], 3:["생각 탐지","환영력"], 5:["저주 부여","둔화"], 7:["야수 지배","에바드의 검은 촉수"], 9:["인간형 지배","염력"] },
   "대요정": { 1:["요정불","수면"], 3:["평정심","환영력"], 5:["점멸","식물 성장"], 7:["야수 지배","상급 투명"], 9:["인간형 지배","외견"] },
-  "주술 칼날": {
-    1:["방어막","분노의 강타"],
-    3:["잔상","낙인 강타"],
-    5:["점멸","원소 무기"],
-    7:["환영 살해자","충격의 강타","야수 지배","상급 투명"],
-    9:["추방 강타","냉기 분사"],
-  },
+  "주술 칼날": { 1:["방어막","분노의 강타"], 3:["잔상","낙인 강타"], 5:["점멸","원소 무기"], 7:["환영 살해자","충격의 강타","야수 지배","상급 투명"], 9:["추방 강타","냉기 분사"] },
 };
-// 주술 칼날 확장 주문의 정확한 레벨 매핑
 const HEXBLADE_LEVELS: Record<string,1|2|3|4|5> = {
   "방어막":1, "분노의 강타":1,
   "잔상":2, "낙인 강타":2,
@@ -330,7 +313,7 @@ const HEXBLADE_LEVELS: Record<string,1|2|3|4|5> = {
   "환영 살해자":4, "충격의 강타":4, "야수 지배":4, "상급 투명":4,
   "추방 강타":5, "냉기 분사":5,
 };
-// 위저드
+
 const WIZARD_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
   1: ["불타는 손길","인간형 매혹","오색 보주","오색 빛보라","변장","신속 후퇴","거짓 목숨","깃털 낙하","소환수 찾기","안개구름","기름칠","얼음 칼","도약 강화","활보","마법사의 갑옷","마력탄","선악 보호","독 광선","방어막","수면","타샤의 끔찍한 웃음","천둥파","마녀의 화살"],
@@ -340,18 +323,13 @@ const WIZARD_SPELLS = {
   5: ["죽음 구름","냉기 분사","정령 소환","인간형 지배","괴물 포박","이차원인 속박","외견","염력","바위의 벽"],
   6: ["비전 관문","연쇄 번개","죽음의 원","언데드 생성","분해","깨무는 눈길","육신 석화","무적의 구체","오틸루크의 빙결 구체","오토의 참을 수 없는 춤","햇살","얼음의 벽"],
 };
-// 레인저
+
 const RANGER_SPELLS = {
   1: ["동물 교감","상처 치료","속박의 일격","안개구름","맛있는 열매","가시 세례","사냥꾼의 표식","도약 강화","활보","동물과 대화"],
   2: ["나무껍질 피부","암시야","하급 회복","신출귀몰","독 보호","침묵","가시밭"],
   3: ["포화 소환","햇빛","번개 화살","식물 성장","에너지 보호"],
 };
-// 팔라딘 (BG3 기준 12레벨 캡 → 최대 3레벨 주문)
-const PALADIN_SPELLS = {
-  1: ["축복","신앙의 방패","분노의 강타","표식의 강타","우월의 강타","신속의 강타","재갈의 강타","강타 파동","치유의 손길","정화의 불꽃","신성의 무기","신성한 응징"],
-  2: ["보호의 오라","구속의 강타","맹공의 강타","정화의 강타","마법 무기","영혼의 무기","영혼 무장"],
-  3: ["눈부신 강타","혼돈의 강타","희망의 등불","정화의 불꽃(상위)","마법 원진","죽음 방비","원소 무기","영웅심(상위)"],
-};
+
 // 몽크 - 사원소의 길(특수 주문)
 const MONK_FE_SPELLS = {
   3: [
@@ -361,6 +339,7 @@ const MONK_FE_SPELLS = {
   6: ["북풍의 손아귀","불지옥의 포옹","정상의 징"],
   11:["불사조의 불꽃","안개 태세","바람 타기"],
 };
+
 // 파이터(비술 기사) / 로그(비전 괴도)
 const EK_SPELLS = {
   0: ["산성 거품","뼛속 냉기","화염살","독 분사","서리 광선","전격의 손아귀","도검 결계","친구","춤추는 빛","빛","마법사의 손","하급 환영","진실의 일격", ...CANTRIPS_PATCH8],
@@ -376,6 +355,13 @@ const AT_SPELLS = {
 // 비전 궁수 / 전투의 대가
 const ELDRITCH_SHOTS = ["추방 화살","현혹 화살","폭발 화살","약화 화살","속박 화살","추적 화살","그림자 화살","관통 화살"];
 const BM_MANEUVERS = ["사령관의 일격","무장 해제 공격","교란의 일격","날렵한 발놀림","속임수 공격","도발 공격","전투 기법 공격","위협 공격","정밀 공격","밀치기 공격","고양 응수","휩쓸기","다리 걸기 공격"];
+
+/** 팔라딘 주문 (요청 반영 — BG3 기준 대표 묶음) */
+const PALADIN_SPELLS = {
+  1: ["축복","신앙의 방패","상처 치료","명령","천둥의 강타","분노의 강타","작열의 강타","강제 결투","신성한 호의"],
+  2: ["지원","하급 회복","독 보호","마법 무기","낙인 강타","번개 일격","영혼의 수호","침묵"],
+  3: ["저주 해제","에너지 보호","실명 강타","원소 무기","활력의 오라","햇빛"],
+};
 
 /** ========= 스타일 ========= */
 const FONT = 14;
@@ -457,8 +443,6 @@ function getWeaponPoolKO(raceKoLabel: string, classKoLabel: string, subclass?: s
   let pool = Array.from(new Set([...racePool, ...classPool]));
   if (classKoLabel === "몽크") pool = Array.from(new Set([...pool, UNARMED_KO]));
   const hasShield = (raceKoLabel && RACE_SHIELD.has(raceKoLabel)) || (classKoLabel && CLASS_SHIELD.has(classKoLabel));
-  if (hasShield && !pool.includes(SHIELD_KO)) pool.push(SHIELD_KО); // 주의
-  // 안전하게 다시 설정
   if (hasShield && !pool.includes(SHIELD_KO)) pool.push(SHIELD_KO);
   if (classKoLabel && subclass) {
     const key = `${classKoLabel}:${subclass}`;
@@ -488,6 +472,7 @@ function mergeWeaponsWithLocks(current: string[], freshPool: string[], lock1: bo
     out[0] = c1;
   }
   const candidates2 = candidates.filter(x=>x!==out[0]);
+
   if (lock2 && current[1]) out[1] = current[1]; else {
     const c2 = candidates2.length ? choice(candidates2) : (current[1] || "");
     out[1] = c2;
@@ -495,7 +480,7 @@ function mergeWeaponsWithLocks(current: string[], freshPool: string[], lock1: bo
   return out.filter(Boolean);
 }
 function randomAny2KO(): string[] {
-  const base = uniq([...(Object.values(WEAPON_KO) as string[]), SHIELD_KO, UNARMED_KO]);
+  const base = Array.from(new Set(Object.values(WEAPON_KO)));
   return sampleN(base, 2);
 }
 function computeClassSkills(classKo: string, bgSel: Background): SkillKey[] {
@@ -535,17 +520,17 @@ function maxSpellLevelByClass(klass: string, level: number): number {
     case "Druid":
     case "Sorcerer":
     case "Warlock":
-      return Math.min(5, Math.floor((level + 1) / 2));
+      return Math.min(6, Math.floor((level + 1) / 2)); // 위저드 외 최대 6레벨 한도 표기(워락/바드 등 5~6)
     case "Wizard":
       return 6;
     case "Paladin":
     case "Ranger":
+      // 하프 캐스터: 2,5,9레벨에 1/2/3레벨 주문 (12레벨까지 4레벨 불가)
       return level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0;
     case "Fighter": // EK 전용
       return Math.min(3, Math.floor((level + 1) / 4));
     case "Rogue":  // AT 전용
       return level >= 7 ? 2 : level >= 3 ? 1 : 0;
-    case "Monk":
     default:
       return 0;
   }
@@ -575,10 +560,10 @@ function knownSpellCount(klass: string, sub: string, level: number): number {
     return map[level] ?? 0;
   }
   if (klass === "Monk" && sub === "사원소의 길") return monkFEKnown(level);
+  // 팔라딘은 준비 마법(known 추적 X) — 제안창 count만 사용
   return 0;
 }
 function collectSpellPool(klass: string, sub: string, level: number): Record<number,string[]> {
-  // AT/EK는 3레벨부터
   if ((klass==="Fighter" && sub==="비술 기사" && level<3) || (klass==="Rogue" && sub==="비전 괴도" && level<3)) {
     return {};
   }
@@ -659,7 +644,7 @@ function buildReplaceLine(klass: string, sub: string, level: number): string | n
   if (!canReplace) return null;
   const known = knownSpellCount(klass, sub, level);
   if (known <= 0) return null;
-  const roll = rand(known) + 1; // 1..known
+  const roll = rand(known) + 1;
   return `교체 굴림 (1d${known} → ${roll}): 기존 ${roll}번째 주문 제거 → 레벨 허용 주문 중 1개 추가`;
 }
 
@@ -717,7 +702,6 @@ const FEATS_ALL: { id: FeatId; ko: string; en: string }[] = [
   {id:"WeaponMaster", ko:"무기의 달인", en:"Weapon Master"},
 ];
 
-/** 재주 UI 보조: 서브옵션(제외 버튼) 없는 재주 */
 const NO_SUBOPTION_FEATS = new Set<FeatId>([
   "CrossbowExpert","GreatWeaponMaster","Lucky","Mobile","Sharpshooter","Sentinel",
   "ShieldMaster","Tough","WarCaster","Actor","Alert","Charger","DungeonDelver",
@@ -733,14 +717,11 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
 
   switch(id){
     case "AbilityImprovements": {
-      // 서로 다른 2개
-      const picks: Abil[] = [];
       const pool: Abil[] = ["STR","DEX","CON","INT","WIS","CHA"];
-      while (picks.length<2 && pool.length){
-        const p = choice(pool);
-        picks.push(p); pool.splice(pool.indexOf(p),1);
-      }
-      const label2 = picks.map(a=>lang==="ko"?abilKoMap[a]:a).join(", ");
+      const a = choice(pool);
+      let rest = pool.filter(x=>x!==a);
+      const b = choice(rest);
+      const label2 = [a,b].map(k=>lang==="ko"?abilKoMap[k]:k).join(", ");
       lines.push(`능력 +2: ${label2}`);
       break;
     }
@@ -794,8 +775,9 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
       break;
     }
     case "Skilled": {
-      const three = sampleN(Object.keys(SK.KO) as SkillKey[], 3).filter(x=>!excluded.has(SK.KO[x]));
-      three.forEach(s=>lines.push(`기술 숙련: ${s in SK.KO ? (SK.KO as any)[s] : s}`));
+      const all = Object.keys(SK.KO) as SkillKey[];
+      const pool = all.map(s=>SK.KO[s]).filter(x=>!excluded.has(x));
+      sampleN(pool,3).forEach(s=>lines.push(`기술 숙련: ${s}`));
       break;
     }
     case "SpellSniper": {
@@ -811,7 +793,7 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
     case "WeaponMaster": {
       const abil = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
       if (abil.length>0) lines.push(`능력 +1: ${choice(abil)}`);
-      const all = Array.from(new Set(Object.values(WEAPON_KO) as string[]));
+      const all = Array.from(new Set(Object.values(WEAPON_KO)));
       const pool = all.filter(x=>!excluded.has(x));
       sampleN(pool,4).forEach(w=>lines.push(`무기 숙련: ${w}`));
       break;
@@ -834,7 +816,6 @@ function computeClericDeityPool(raceKey: keyof typeof RACES | "-", subraceKo: st
   if (raceKey === "Dwarf" && subraceKo === "드웨가") pool = pool.concat(CLERIC_DEITY_EXTRA_BY_RACE.Dwarf_Duergar);
   return uniq(pool);
 }
-
 /** ========= 컴포넌트 ========= */
 export default function App() {
   const [lang, setLang] = useState<Lang>("ko");
@@ -869,7 +850,7 @@ export default function App() {
   const [featName, setFeatName] = useState<string>("");
   const [featDetails, setFeatDetails] = useState<string[]>([]);
   const [featExcluded, setFeatExcluded] = useState<Set<string>>(new Set());
-  const [featExcludedFeats, setFeatExcludedFeats] = useState<Set<FeatId>>(new Set()); // 재주 자체 제외
+  const [featExcludedFeats, setFeatExcludedFeats] = useState<Set<FeatId>>(new Set());
 
   // 선택 픽커
   const [showWeaponPicker, setShowWeaponPicker] = useState(false);
@@ -903,11 +884,11 @@ export default function App() {
   const classOut = classKey === "-" ? "" : (lang === "ko" ? CLASSES[classKey].ko : String(classKey));
 
   /** ===== 랜덤러 & 합성 ===== */
-  function rollBodyType(forRace: keyof typeof RACES | "-" = raceKey){
+  const rollBodyType = (forRace: keyof typeof RACES | "-" = raceKey) => {
     if (lockBody) return;
     const cand = allowedBodyTypes(forRace);
     setBodyType(choice(cand));
-  }
+  };
 
   function recomputeWeaponsProficient() {
     const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
@@ -931,6 +912,47 @@ export default function App() {
     setWeaponsKO(merged);
   }
 
+  // 이벤트 핸들러 (정적 타이핑)
+  const onChangeRace = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (lockRace) return;
+    const k = e.target.value as keyof typeof RACES | "-";
+    setRaceKey(k);
+    const sr = k==="-"?"-":(RACES[k].subs?.[0] ?? "-");
+    setSubraceKo(sr);
+    if (!lockBody) rollBodyType(k);
+    if (classKey==="Cleric"){
+      const pool=computeClericDeityPool(k, sr);
+      if (!pool.includes(deity)) setDeity(choice(pool));
+    }
+  };
+  const onChangeSubrace = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (lockRace) return;
+    setSubraceKo(e.target.value);
+    if (classKey==="Cleric"){
+      const pool=computeClericDeityPool(raceKey, e.target.value);
+      if (!pool.includes(deity)) setDeity(choice(pool));
+    }
+  };
+  const onChangeClass = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (lockClass) return;
+    const k = e.target.value as keyof typeof CLASSES | "-";
+    setClassKey(k);
+    const sub = k==="-"?"-":CLASSES[k].subclasses[0];
+    setSubclassKo(sub);
+    if (k==="Cleric"){
+      const pool=computeClericDeityPool(raceKey, subraceKo);
+      setDeity(choice(pool));
+    } else setDeity("");
+  };
+  const onChangeSubclass = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (lockClass) return;
+    setSubclassKo(e.target.value);
+  };
+  const onChangeBG = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (lockBG) return;
+    setBg(e.target.value as Background);
+  };
+
   function rollRace() {
     if (lockRace) return;
     const keys = Object.keys(RACES) as (keyof typeof RACES)[];
@@ -943,7 +965,7 @@ export default function App() {
       const pool = computeClericDeityPool(r, sub);
       if (!pool.includes(deity)) setDeity(choice(pool));
     }
-    window.setTimeout(()=>{ recomputeWeaponsProficient(); if (!lockSkills) rollSkillsBtn(); },0);
+    setTimeout(()=>{ recomputeWeaponsProficient(); if (!lockSkills) rollSkillsBtn(); },0);
   }
   function rollClass() {
     if (lockClass) return;
@@ -958,13 +980,12 @@ export default function App() {
     } else {
       setDeity("");
     }
-    window.setTimeout(()=>{ recomputeWeaponsProficient(); if (!lockSkills) rollSkillsBtn(); },0);
+    setTimeout(()=>{ recomputeWeaponsProficient(); if (!lockSkills) rollSkillsBtn(); },0);
   }
   function rollBackground() {
     if (lockBG) return;
-    setBg(choice(BACK_KО)); // 주의
     setBg(choice(BACK_KO));
-    if (!lockSkills) window.setTimeout(rollSkillsBtn,0);
+    if (!lockSkills) setTimeout(rollSkillsBtn,0);
   }
   function rollStatsBtn() {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
@@ -1008,7 +1029,7 @@ export default function App() {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
 
-    window.setTimeout(()=>{
+    setTimeout(()=>{
       recomputeWeaponsProficient();
       if (!lockSkills) {
         const classKoLabel = k === "-" ? "" : CLASSES[k].ko;
@@ -1029,7 +1050,7 @@ export default function App() {
     const parsed = parseDice(diceExpr);
     if (!parsed) { setDiceDetail("형식 오류"); return; }
     const rolls = Array.from({length: parsed.n}, ()=> rand(parsed.m)+1);
-    setDiceDetail(`${diceExpr} -> [${rolls.join(", ")}]`);
+    setDiceDetail(`${diceExpr} -> [${rolls.join(", ")}]`); // 합계 출력 없음
   }
   function handleVersus(){
     const parts = names.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
@@ -1104,7 +1125,7 @@ export default function App() {
       out.push(`종족 소마법: ${choice(wiz0.filter(x=>!exclude.has(x)))}`);
     }
 
-    // 주문 추천 — 누적 풀에서 중복 없이 뽑기
+    // 주문 추천 — 누적 풀에서 중복 없이
     {
       const pool = collectSpellPool(klass, sub, level);
       const flat = flattenPool(pool, exclude);
@@ -1187,11 +1208,13 @@ export default function App() {
     rollFeatBtn();
   }
 
-  /** ===== 옵션 데이터 ===== */
+  // 옵션 목록 (타입 안전 옵션 배열로 두어 TS가 불평하지 않게)
   const raceOptions = Object.keys(RACES) as (keyof typeof RACES)[];
   const classOptions = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+  const subraceOptions = (raceKey === "-" || !RACES[raceKey].subs) ? ["-"] : (RACES[raceKey].subs as string[]);
+  const subclassOptions = (classKey === "-") ? ["-"] : (CLASSES[classKey].subclasses as string[]);
 
-  // 종족 바뀌어 허용 신체유형 축소 시 보정
+  // 종족 변경 시 허용 신체유형 보정
   useEffect(()=>{
     const cand = allowedBodyTypes(raceKey);
     if (cand.indexOf(bodyType) === -1) {
@@ -1200,13 +1223,13 @@ export default function App() {
     }
   }, [raceKey, bodyType]);
 
-  // 무기가 1개일 때 2번 락은 해제
+  // 무기가 1개일 때 2번 락 해제
   useEffect(()=>{
     if (weaponsKO.length < 2 && lockWeapons2) setLockWeapons2(false);
   }, [weaponsKO, lockWeapons2]);
 
   // 무기 픽커 목록(방패/비무장 포함)
-  const weaponPickerList = uniq([...(Object.values(WEAPON_KO) as string[]), SHIELD_KO, UNARMED_KO]);
+  const weaponPickerList = uniq([...Object.values(WEAPON_KO), SHIELD_KO, UNARMED_KO]);
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", justifyContent:"center", alignItems:"flex-start", background:"#fff" }}>
@@ -1234,24 +1257,16 @@ export default function App() {
                 <div>{raceOut}{subraceKo !== "-" && subraceKo ? ` / ${subraceKo}` : ""}</div>
 
                 <div style={{ color:"#6b7280" }}>{T.klass}</div>
-                <div>{classOut}{subclassKo !== "-" && subclassKo ? ` / ${subclassKo}` : ""}</div>
-
-                {classKey==="Cleric" && (
-                  <>
-                    <div style={{ color:"#6b7280" }}>{T.deity}</div>
-                    <div>{deity}</div>
-                  </>
-                )}
+                <div>
+                  {classOut}{subclassKo !== "-" && subclassKo ? ` / ${subclassKo}` : ""}
+                  {classKey==="Cleric" && deity ? ` / ${deity}` : ""}
+                </div>
 
                 <div style={{ color:"#6b7280" }}>{T.background}</div>
                 <div>{bgLabel(bg, lang)}</div>
 
                 <div style={{ color:"#6b7280" }}>{T.weapons}</div>
-                <div>
-                  {weaponsKO.length===0 ? "" :
-                   weaponsKO.length===1 ? weaponsKO[0] :
-                   `${weaponsKO[0]}, ${weaponsKO[1]}`}
-                </div>
+                <div>{weaponsKO.join(", ")}</div>
 
                 <div style={{ color:"#6b7280" }}>{T.skills}</div>
                 <div>{skills.map(skillLabel).join(", ")}</div>
@@ -1280,9 +1295,9 @@ export default function App() {
               {/* 조작 */}
               <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
                 <button onClick={rollAll} style={btnPrimary}>{T.rollAll}</button>
-                <button onClick={()=>{rollRace();}} style={btn}>{T.onlyRace}</button>
-                <button onClick={()=>{rollClass();}} style={btn}>{T.onlyClass}</button>
-                <button onClick={()=>{rollBackground();}} style={btn}>{T.onlyBG}</button>
+                <button onClick={rollRace} style={btn}>{T.onlyRace}</button>
+                <button onClick={rollClass} style={btn}>{T.onlyClass}</button>
+                <button onClick={rollBackground} style={btn}>{T.onlyBG}</button>
                 <button onClick={rollStatsBtn} style={btn}>{T.rollStats}</button>
                 <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
                 <button onClick={rollAny2Weapons} style={btn}>{T.any2Weapons}</button>
@@ -1297,9 +1312,7 @@ export default function App() {
               <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
                 <button onClick={rollFeatBtn} style={btn}>{T.rollFeat}</button>
                 {featName && <div style={{ fontWeight:700 }}>{featName}</div>}
-                {featId && (
-                  <button style={btnSecondary} onClick={excludeWholeFeat}>재주 제외</button>
-                )}
+                {featId && <button style={btnSecondary} onClick={excludeWholeFeat}>재주 제외</button>}
               </div>
               {featDetails.length>0 && (
                 <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
@@ -1360,12 +1373,12 @@ export default function App() {
               {/* 종족 */}
               <div style={rowTight}>
                 <label style={label}>{T.race}</label>
-                <select value={raceKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof RACES | "-"; if (lockRace) return; setRaceKey(k); const sr = k==="-"?"-":(RACES[k].subs?.[0] ?? "-"); setSubraceKo(sr); if (!lockBody) rollBodyType(k); if (classKey==="Cleric"){ const pool=computeClericDeityPool(k, sr); if (!pool.includes(deity)) setDeity(choice(pool)); } }} style={{...select, minWidth:200, maxWidth:220}}>
+                <select value={raceKey} onChange={onChangeRace} style={{...select, minWidth:200, maxWidth:220}}>
                   <option value="-">-</option>
                   {raceOptions.map(k=><option key={k} value={k}>{lang==="ko"?RACES[k].ko:k}</option>)}
                 </select>
-                <select disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)} value={subraceKo} onChange={e=>{ if (lockRace) return; setSubraceKo(e.target.value); if (classKey==="Cleric"){ const pool=computeClericDeityPool(raceKey, e.target.value); if (!pool.includes(deity)) setDeity(choice(pool)); } }} style={{...select, minWidth:180, maxWidth:200}}>
-                  {(raceKey==="-" || !RACES[raceKey].subs) ? <option value="-">-</option> : RACES[raceKey].subs!.map(s=><option key={s} value={s}>{s}</option>)}
+                <select value={subraceKo} onChange={onChangeSubrace} disabled={subraceOptions.length===1 && subraceOptions[0]==="-"} style={{...select, minWidth:180, maxWidth:200}}>
+                  {subraceOptions.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
                 <span style={{ ...nowrap, color:"#6b7280" }}>{L[lang].locks}</span>
                 <input type="checkbox" checked={lockRace} onChange={(e)=>setLockRace(e.target.checked)} style={{ height:CTRL_H }}/>
@@ -1374,12 +1387,12 @@ export default function App() {
               {/* 클래스 */}
               <div style={rowTight}>
                 <label style={label}>{T.klass}</label>
-                <select value={classKey} onChange={(e:any)=>{ const k = e.target.value as keyof typeof CLASSES | "-"; if (lockClass) return; setClassKey(k); const sub = k==="-"?"-":CLASSES[k].subclasses[0]; setSubclassKo(sub); if (k==="Cleric"){ const pool=computeClericDeityPool(raceKey, subraceKo); setDeity(choice(pool)); } else setDeity(""); }} style={{...select, minWidth:220, maxWidth:240}}>
+                <select value={classKey} onChange={onChangeClass} style={{...select, minWidth:220, maxWidth:240}}>
                   <option value="-">-</option>
                   {classOptions.map(k=><option key={k} value={k}>{lang==="ko"?CLASSES[k].ko:k}</option>)}
                 </select>
-                <select disabled={classKey==="-" } value={subclassKo} onChange={e=>{ if (lockClass) return; setSubclassKo(e.target.value); }} style={{...select, minWidth:220, maxWidth:240}}>
-                  {classKey==="-" ? <option value="-">-</option> : CLASSES[classKey].subclasses.map(s=><option key={s} value={s}>{s}</option>)}
+                <select value={subclassKo} onChange={onChangeSubclass} disabled={subclassOptions.length===1 && subclassOptions[0]==="-"} style={{...select, minWidth:220, maxWidth:240}}>
+                  {subclassOptions.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
                 <span style={{ ...nowrap, color:"#6b7280" }}>{L[lang].locks}</span>
                 <input type="checkbox" checked={lockClass} onChange={(e)=>setLockClass(e.target.checked)} style={{ height:CTRL_H }}/>
@@ -1388,7 +1401,7 @@ export default function App() {
               {/* 출신 */}
               <div style={rowTight}>
                 <label style={label}>{T.background}</label>
-                <select value={bg} onChange={(e:any)=>{ if (lockBG) return; setBg(e.target.value as Background); }} style={{...select, minWidth:240, maxWidth:260}}>
+                <select value={bg} onChange={onChangeBG} style={{...select, minWidth:240, maxWidth:260}}>
                   <option value="-">-</option>
                   {BACK_KO.map(b=><option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
                 </select>
@@ -1400,7 +1413,7 @@ export default function App() {
               <div style={rowTight}>
                 <label style={label}>{T.bodyType}</label>
                 <div style={{ padding:"0 8px" }}>{bodyTypeLabel(bodyType)}</div>
-                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</button>
+                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</                <button style={btn} onClick={()=>rollBodyType()}>{T.onlyBody}</button>
                 <span style={{ ...nowrap, color:"#6b7280", marginLeft:8 }}>{L[lang].locks}</span>
                 <input type="checkbox" checked={lockBody} onChange={(e)=>setLockBody(e.target.checked)} style={{ height:CTRL_H }}/>
               </div>
@@ -1408,64 +1421,127 @@ export default function App() {
               {/* 무기 선택 + 슬롯별 고정 */}
               <div style={row}>
                 <label style={label}>{T.weapons}</label>
-                <button style={btn} onClick={()=>{ setTempWeapons(new Set(weaponsKO)); setShowWeaponPicker(true); }}>{T.openPicker}</button>
+                <button
+                  style={btn}
+                  onClick={()=>{
+                    setTempWeapons(new Set(weaponsKO));
+                    setShowWeaponPicker(true);
+                  }}
+                >
+                  {T.openPicker}
+                </button>
                 <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
                   {weaponsKO.join(", ")}
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ color:"#6b7280" }}>슬롯1 {L[lang].locks}</span>
-                  <input type="checkbox" disabled={weaponsKO.length<1} checked={lockWeapons1} onChange={(e)=>setLockWeapons1(e.target.checked)}/>
+                  <input
+                    type="checkbox"
+                    disabled={weaponsKO.length<1}
+                    checked={lockWeapons1}
+                    onChange={(e)=>setLockWeapons1(e.target.checked)}
+                  />
                   <span style={{ color:"#6b7280" }}>슬롯2 {L[lang].locks}</span>
-                  <input type="checkbox" disabled={weaponsKO.length<2} checked={lockWeapons2} onChange={(e)=>setLockWeapons2(e.target.checked)}/>
+                  <input
+                    type="checkbox"
+                    disabled={weaponsKO.length<2}
+                    checked={lockWeapons2}
+                    onChange={(e)=>setLockWeapons2(e.target.checked)}
+                  />
                 </div>
               </div>
 
               {/* 기술 선택 + 고정 */}
               <div style={row}>
                 <label style={label}>{T.skills}</label>
-                <button style={btn} onClick={()=>{ setTempSkills(new Set(skills)); setShowSkillPicker(true); }}>{T.openPicker}</button>
-                <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>{skills.map(skillLabel).join(", ")}</div>
+                <button
+                  style={btn}
+                  onClick={()=>{
+                    setTempSkills(new Set(skills));
+                    setShowSkillPicker(true);
+                  }}
+                >
+                  {T.openPicker}
+                </button>
+                <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
+                  {skills.map(skillLabel).join(", ")}
+                </div>
                 <span style={{ ...nowrap, color:"#6b7280" }}>{L[lang].locks}</span>
                 <input type="checkbox" checked={lockSkills} onChange={(e)=>setLockSkills(e.target.checked)} />
               </div>
             </section>
 
-            {/* 클래스별 특성 */}
+            {/* 클래스별 특성 (성장 추천) */}
             <section style={{ border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
               <h3 style={{ fontSize:18, fontWeight:700, margin:"0 0 12px" }}>{T.growth}</h3>
               <div style={{ display:"grid", gap:8 }}>
                 <div style={row}>
                   <label style={label}>{T.classPick}</label>
-                  <select value={growClass} onChange={(e:any)=>{ const v=e.target.value as keyof typeof CLASSES | "-"; setGrowClass(v); setGrowSub("-"); }} style={{...select, minWidth:220, maxWidth:240}}>
+                  <select
+                    value={growClass}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{
+                      const v = e.target.value as keyof typeof CLASSES | "-";
+                      setGrowClass(v);
+                      setGrowSub("-");
+                    }}
+                    style={{...select, minWidth:220, maxWidth:240}}
+                  >
                     <option value="-">-</option>
                     {classOptions.map(k=><option key={k} value={k}>{lang==="ko"?CLASSES[k].ko:k}</option>)}
                   </select>
                 </div>
+
                 <div style={row}>
                   <label style={label}>{T.subPick}</label>
-                  <select value={growSub} onChange={(e)=>setGrowSub(e.target.value)} style={{...select, minWidth:220, maxWidth:240}} disabled={growClass==="-"}>
-                    {growClass==="-"? <option value="-">-</option> : ["-"].concat(CLASSES[growClass].subclasses).map(s=><option key={s} value={s}>{s}</option>)}
+                  <select
+                    value={growSub}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setGrowSub(e.target.value)}
+                    style={{...select, minWidth:220, maxWidth:240}}
+                    disabled={growClass==="-"}>
+                    {growClass==="-" ? (
+                      <option value="-">-</option>
+                    ) : ["-"].concat(CLASSES[growClass].subclasses).map(s=>(
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                 </div>
+
                 <div style={row}>
                   <label style={label}>{T.levelPick}</label>
-                  <input type="number" min={1} max={12} value={growLevel} onChange={(e)=>setGrowLevel(parseInt(e.target.value||"1",10))} style={{...input, width:120}}/>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={growLevel}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>)=>setGrowLevel(parseInt(e.target.value || "1", 10))}
+                    style={{...input, width:120}}
+                  />
                 </div>
+
                 <div style={row}>
                   <label style={label}>{T.howManySpells}</label>
-                  <input type="number" min={0} max={6} value={growSpellCount} onChange={(e)=>setGrowSpellCount(parseInt(e.target.value||"0",10))} style={{...input, width:120}}/>
+                  <input
+                    type="number"
+                    min={0}
+                    max={6}
+                    value={growSpellCount}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>)=>setGrowSpellCount(parseInt(e.target.value || "0", 10))}
+                    style={{...input, width:120}}
+                  />
                 </div>
+
                 <div>
                   <button onClick={doSuggestGrowth} style={btn}>{T.suggest}</button>
                 </div>
+
                 {growResult.length>0 && (
                   <div style={{ marginTop:8 }}>
-                    {growResult.map((g,i)=>
+                    {growResult.map((g,i)=>(
                       <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                         <span>• {g}</span>
                         <button style={btnSecondary} onClick={()=>excludeGrowthItem(g)}>{T.exclude}</button>
                       </div>
-                    )}
+                    ))}
                     {Array.from(growExcluded).length>0 && (
                       <div style={{ marginTop:6 }}>
                         <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{T.excluded}</div>
@@ -1484,7 +1560,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* 무기 픽커 */}
+      {/* 무기 픽커 모달 */}
       {showWeaponPicker && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
           <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:360 }}>
@@ -1492,9 +1568,15 @@ export default function App() {
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
               {weaponPickerList.map(w=>(
                 <label key={w} style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <input type="checkbox" checked={tempWeapons.has(w)} onChange={(e)=>{
-                    const n=new Set(tempWeapons); e.target.checked?n.add(w):n.delete(w); setTempWeapons(n);
-                  }}/>
+                  <input
+                    type="checkbox"
+                    checked={tempWeapons.has(w)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{
+                      const n = new Set(tempWeapons);
+                      e.target.checked ? n.add(w) : n.delete(w);
+                      setTempWeapons(n);
+                    }}
+                  />
                   <span>{w}</span>
                 </label>
               ))}
@@ -1506,7 +1588,7 @@ export default function App() {
                 onClick={()=>{
                   const next = Array.from(tempWeapons);
                   setWeaponsKO(next);
-                  if (next.length<2) setLockWeapons2(false);
+                  if (next.length < 2) setLockWeapons2(false);
                   setShowWeaponPicker(false);
                 }}
               >
@@ -1517,7 +1599,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 기술 픽커 */}
+      {/* 기술 픽커 모달 */}
       {showSkillPicker && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
           <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:360 }}>
@@ -1525,16 +1607,30 @@ export default function App() {
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
               {(Object.keys(SK.KO) as SkillKey[]).map(s=>(
                 <label key={s} style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <input type="checkbox" checked={tempSkills.has(s)} onChange={(e)=>{
-                    const n=new Set(tempSkills); e.target.checked?n.add(s):n.delete(s); setTempSkills(n);
-                  }}/>
+                  <input
+                    type="checkbox"
+                    checked={tempSkills.has(s)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{
+                      const n = new Set(tempSkills);
+                      e.target.checked ? n.add(s) : n.delete(s);
+                      setTempSkills(n);
+                    }}
+                  />
                   <span>{skillLabel(s)}</span>
                 </label>
               ))}
             </div>
             <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
               <button style={btnSecondary} onClick={()=>setShowSkillPicker(false)}>{T.cancel}</button>
-              <button style={btn} onClick={()=>{ setSkills(Array.from(tempSkills)); setShowSkillPicker(false); }}>{T.apply}</button>
+              <button
+                style={btn}
+                onClick={()=>{
+                  setSkills(Array.from(tempSkills));
+                  setShowSkillPicker(false);
+                }}
+              >
+                {T.apply}
+              </button>
             </div>
           </div>
         </div>
@@ -1542,3 +1638,5 @@ export default function App() {
     </div>
   );
 }
+
+
