@@ -1039,9 +1039,34 @@ export default function App() {
     setSkills(picks);
   }
   function rollAll() {
-    rollRace(); rollClass(); rollBackground(); rollStatsBtn();
-    setTimeout(()=>{ rollWeaponsBtn(); rollSkillsBtn(); },0);
-  }
+  // 1) 한 번에 로컬로 모두 뽑기
+  const rKey = choice(Object.keys(RACES) as (keyof typeof RACES)[]);
+  const rSub = RACES[rKey].subs ? choice(RACES[rKey].subs!) : "-";
+
+  const cKey = choice(Object.keys(CLASSES) as (keyof typeof CLASSES)[]);
+  const cSub = choice(CLASSES[cKey].subclasses);
+
+  const bgPick = choice(BACK_KO);
+
+  const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
+
+  // 2) 로컬 값으로 의존 계산 (상태 읽지 않음)
+  const raceKoLabel  = RACES[rKey].ko;
+  const classKoLabel = CLASSES[cKey].ko;
+  const weapons = computeWeapons(raceKoLabel, classKoLabel, cSub);
+  const skillsPick = computeClassSkills(classKoLabel, bgPick);
+
+  // 3) 한 번에 상태 반영
+  setRaceKey(rKey);       setSubraceKo(rSub);
+  setClassKey(cKey);      setSubclassKo(cSub);
+  setBg(bgPick);
+
+  setPbBonus2(bonus2);    setPbBonus1(bonus1);  setStats(final);
+
+  setWeaponsKO(weapons);
+  setSkills(skillsPick);
+}
+
 
   /** ===== 주사위/승자 ===== */
   function handleRollDice(){
