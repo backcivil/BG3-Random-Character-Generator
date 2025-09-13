@@ -855,9 +855,12 @@ export default function App() {
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
   function rollWeaponsBtn() {
-    const picks = computeWeapons(raceKo, classKey === "-" ? "" : CLASSES[classKey].ko, subclassKo);
-    setWeaponsKO(picks);
-  }
+  const raceKoStr  = raceKey === "-" ? "" : RACES[raceKey].ko;
+  const classKoStr = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const picks = computeWeapons(raceKoStr, classKoStr, subclassKo);
+  setWeaponsKO(picks);
+}
+
   function rollAny2Weapons() { setWeaponsKO(randomAny2KO()); }
   function rollSkillsBtn() {
     const classKo = classKey === "-" ? "" : CLASSES[classKey].ko;
