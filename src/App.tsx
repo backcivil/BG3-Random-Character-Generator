@@ -596,18 +596,25 @@ const FEATS_ALL: { id: FeatId; ko: string; en: string }[] = [
 ];
 
 // 재주 옵션 생성기
+// ===== 여기부터 featRollCore 교체 =====
 function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: string; lines: string[] } {
   const label = FEATS_ALL.find(f=>f.id===id)!;
   const name = lang==="ko"?label.ko:label.en;
   const lines: string[] = [];
   const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
 
+  // 헬퍼
+  const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
+
   switch(id){
     case "AbilityImprovements": {
+      // 그대로 한 줄 (요청 대상 아님)
       const picks = sampleN(["STR","DEX","CON","INT","WIS","CHA"], 2);
       lines.push(`능력 +2: ${lang==="ko"?picks.map(a=>abilKoMap[a]).join(", "):picks.join(", ")}`);
       break;
     }
+
+    // 능력 +1 계열 (단일 항목)
     case "Athlete":
     case "LightlyArmoured":
     case "HeavilyArmoured":
@@ -618,10 +625,14 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
       if (pool.length>0) lines.push(`능력 +1: ${choice(pool)}`);
       break;
     }
+
     case "ElementalAdept": {
       const elem = choice(["산성","냉기","화염","번개","천둥"].filter(x=>!excluded.has(x)));
-      lines.push(`원소 숙련: ${elem}`); break;
+      if (elem) lines.push(`원소 숙련: ${elem}`);
+      break;
     }
+
+    // 마법 입문: 각 아이템을 "한 줄씩" 넣는다 (소마법×2, 1레벨×1)
     case "MagicInitiate:Bard":
     case "MagicInitiate:Cleric":
     case "MagicInitiate:Druid":
@@ -630,56 +641,80 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
     case "MagicInitiate:Wizard": {
       const base = id.split(":")[1];
       const pool = (base==="Bard"?BARD_SPELLS: base==="Cleric"?CLERIC_SPELLS: base==="Druid"?DRUID_SPELLS: base==="Sorcerer"?SORCERER_SPELLS: base==="Warlock"?WARLOCK_BASE: WIZARD_SPELLS);
-      const can = (pool[0]||[]).filter(x=>!excluded.has(x));
-      const l1 = (pool[1]||[]).filter(x=>!excluded.has(x));
-      if (can.length>0) lines.push(`소마법: ${sampleN(can,2).join(", ")}`);
-      if (l1.length>0) lines.push(`1레벨 주문: ${choice(l1)}`);
+      // 소마법 2개(개별 라인)
+      const canPool = (pool[0]||[]).filter(x=>!excluded.has(x));
+      const cantrips = sampleN(canPool, 2);
+      for (const c of cantrips) lines.push(`소마법: ${c}`);
+      // 1레벨 주문 1개(개별 라인)
+      const l1Pool = (pool[1]||[]).filter(x=>!excluded.has(x));
+      if (l1Pool.length>0) lines.push(`1레벨 주문: ${choice(l1Pool)}`);
       break;
     }
+
+    // 무예 숙련: 2개를 개별 라인
     case "MartialAdept": {
-      const one = choice(BM_MANEUVERS.filter(x=>!excluded.has(x)));
-      const two = choice(BM_MANEUVERS.filter(x=>!excluded.has(x) && x!==one));
-      lines.push(`전투 기법: ${one}`);
+      const avail = BM_MANEUVERS.filter(x=>!excluded.has(x));
+      const one = choice(avail);
+      const two = choice(avail.filter(x=>x!==one));
+      if (one) lines.push(`전투 기법: ${one}`);
       if (two) lines.push(`전투 기법: ${two}`);
       break;
     }
+
     case "Resilient": {
       const one = choice(["근력","민첩","건강","지능","지혜","매력"].filter(x=>!excluded.has(x)));
-      lines.push(`저항력: ${one}`); break;
-    }
-    case "RitualCaster": {
-      const two = sampleN(["망자와 대화","소환수 찾기","활보","도약 강화","변장","동물과 대화"].filter(x=>!excluded.has(x)), 2);
-      lines.push(`의식 주문: ${two.join(", ")}`); break;
-    }
-    case "Skilled": {
-      const three = sampleN(Object.keys(SK.KO) as SkillKey[], 3).filter(x=>!excluded.has(SK.KO[x]));
-      lines.push(`기술 숙련 3개: ${three.map(x=>lang==="ko"?SK.KO[x]:SK.EN[x]).join(", ")}`);
+      if (one) lines.push(`저항력: ${one}`);
       break;
     }
+
+    // 의식 시전자: 2개를 개별 라인
+    case "RitualCaster": {
+      const arr = ["망자와 대화","소환수 찾기","활보","도약 강화","변장","동물과 대화"].filter(x=>!excluded.has(x));
+      const picks = sampleN(arr, 2);
+      for (const p of picks) lines.push(`의식 주문: ${p}`);
+      break;
+    }
+
+    // 숙련가: 3개를 개별 라인
+    case "Skilled": {
+      const all = Object.keys(SK.KO) as SkillKey[];
+      const pool = all.map(skillDisp).filter(x=>!excluded.has(x));
+      const picks = sampleN(pool, 3);
+      for (const p of picks) lines.push(`기술 숙련: ${p}`);
+      break;
+    }
+
     case "SpellSniper": {
       const can = ["뼛속 냉기","섬뜩한 파동","화염살","서리 광선","전격의 손아귀","가시 채찍"].filter(x=>!excluded.has(x));
       if (can.length>0) lines.push(`주문: ${choice(can)}`);
       break;
     }
+
     case "TavernBrawler": {
       const pool = ["STR","CON"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
       if (pool.length>0) lines.push(`능력 +1: ${choice(pool)}`);
       break;
     }
+
+    // 무기 숙련가: 능력+1 (1개) + 무기 숙련 4개(개별 라인)
     case "WeaponMaster": {
       const abil = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a).filter(x=>!excluded.has(x));
       if (abil.length>0) lines.push(`능력 +1: ${choice(abil)}`);
       const all = Array.from(new Set(Object.values(WEAPON_KO)));
       const pool = all.filter(x=>!excluded.has(x));
-      lines.push(`무기 숙련(4): ${sampleN(pool,4).join(", ")}`);
+      const picks = sampleN(pool, 4);
+      for (const p of picks) lines.push(`무기 숙련: ${p}`);
       break;
     }
+
     default: {
+      // 옵션 없는 재주는 그대로
       lines.push(lang==="ko" ? "특성 적용" : "Gain feat benefits");
     }
   }
   return { name, lines };
 }
+
 function rollFeatRandom(excluded: Set<string>, lang: Lang){
   const pick = choice(FEATS_ALL);
   const r = featRollCore(pick.id, lang, excluded);
