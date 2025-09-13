@@ -943,30 +943,35 @@ export default function App() {
     setBodyType(choice(cand));
   }
 
- function recomputeWeaponsProficient() {
-  const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
-  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+ // 기존 함수를 이 버전으로 완전히 교체
+function recomputeWeaponsProficient(
+  nextRaceKey: keyof typeof RACES | "-" = raceKey,
+  nextClassKey: keyof typeof CLASSES | "-" = classKey,
+  nextSubclassKo: string = subclassKo
+) {
+  const raceKoLabel  = nextRaceKey  === "-" ? "" : RACES[nextRaceKey].ko;
+  const classKoLabel = nextClassKey === "-" ? "" : CLASSES[nextClassKey].ko;
+
   const pool = getWeaponPoolKO(
     raceKoLabel,
     classKoLabel,
-    subclassKo !== "-" ? subclassKo : undefined
+    nextSubclassKo !== "-" ? nextSubclassKo : undefined
   );
 
-  // 잠금 중인 슬롯 수 계산 (실제 값이 있을 때만 카운트)
+  // 잠긴 슬롯 수(실제 값이 있을 때만 집계)
   const lockedCount =
     (lockWeapons1 && weaponsKO[0] ? 1 : 0) +
     (lockWeapons2 && weaponsKO[1] ? 1 : 0);
 
-  // 기본 목표 개수(클래스/종족 풀 기준). 풀이 비면 임의 2개.
-  const baseTarget = pool.length === 0 ? 2 : decideWeaponCountByPool(pool);
+  // 기본 목표 개수: 풀 없으면 2개, 있으면 규칙대로
+  const baseTarget: 1|2 = (pool.length === 0 ? 2 : decideWeaponCountByPool(pool));
 
-  // 잠금 개수보다 작게 내려가지 않도록 보정
-  const targetN = Math.max(baseTarget, lockedCount) as 1 | 2;
+  // 잠금 개수보다 작아지지 않도록 보정
+  const targetN = (Math.max(baseTarget, lockedCount) === 2 ? 2 : 1) as 1|2;
 
-  // 풀이 비면 임의 2개 풀로 대체 (방패/비무장 제외 Any)
+  // 풀 없으면 임의 2개로 대체
   const freshPool = pool.length === 0 ? randomAny2KO() : pool;
 
-  // 잠금 반영 병합 (잠긴 값은 무조건 유지)
   const merged = mergeWeaponsWithLocks(
     weaponsKO,
     freshPool,
@@ -976,8 +981,9 @@ export default function App() {
   );
 
   setWeaponsKO(merged);
-  // ❌ 자동 해제 금지: merged.length < 2 여도 setLockWeapons2(false) 하지 않음
+  // ⚠ 자동으로 락 해제하지 않습니다 (예전 코드의 setLockWeapons2(false) 삭제 유지)
 }
+
 
   function recomputeWeaponsAny() {
     const base2 = randomAny2KO();
@@ -985,40 +991,66 @@ export default function App() {
     setWeaponsKO(merged);
   }
 
-  function rollRace() {
-    if (lockRace) return;
-    const keys = Object.keys(RACES) as (keyof typeof RACES)[];
-    const r = choice(keys);
-    const sub = RACES[r].subs ? choice(RACES[r].subs!) : "-";
-    setRaceKey(r);
-    setSubraceKo(sub);
-    if (!lockBody) rollBodyType(r);
-    if (classKey === "Cleric") {
-      const pool = computeClericDeityPool(r, sub);
-      if (!pool.includes(deity)) setDeity(choice(pool));
-    }
-    window.setTimeout(()=>{ recomputeWeaponsProficient(); if (!lockSkills) rollSkillsBtn(); },0);
+ function rollRace() {
+  if (lockRace) return;
+  const keys = Object.keys(RACES) as (keyof typeof RACES)[];
+  const r = choice(keys);
+  const sub = RACES[r].subs ? choice(RACES[r].subs!) : "-";
+
+  setRaceKey(r);
+  setSubraceKo(sub);
+
+  if (!lockBody) rollBodyType(r);
+
+  if (classKey === "Cleric") {
+    const pool = computeClericDeityPool(r, sub);
+    if (!pool.includes(deity)) setDeity(choice(pool));
   }
-  function rollClass() {
-    if (lockClass) return;
-    const keys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-    const k = choice(keys);
-    const sub = choice(CLASSES[k].subclasses);
-    setClassKey(k);
-    setSubclassKo(sub);
-    if (k === "Cleric") {
-      const pool = computeClericDeityPool(raceKey, subraceKo);
-      setDeity(choice(pool));
-    } else {
-      setDeity("");
-    }
-    window.setTimeout(()=>{ recomputeWeaponsProficient(); if (!lockSkills) rollSkillsBtn(); },0);
+
+  // 비동기 지연 없이 즉시 최신 값으로 재계산
+  recomputeWeaponsProficient(r, classKey, subclassKo);
+
+  if (!lockSkills) {
+    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+    setSkills(computeClassSkills(classKoLabel, bg));
   }
-  function rollBackground() {
-    if (lockBG) return;
-    setBg(choice(BACK_KO));
-    if (!lockSkills) window.setTimeout(rollSkillsBtn,0);
+}
+
+ function rollClass() {
+  if (lockClass) return;
+  const keys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+  const k = choice(keys);
+  const sub = choice(CLASSES[k].subclasses);
+
+  setClassKey(k);
+  setSubclassKo(sub);
+
+  if (k === "Cleric") {
+    const pool = computeClericDeityPool(raceKey, subraceKo);
+    setDeity(choice(pool));
+  } else {
+    setDeity("");
   }
+
+  recomputeWeaponsProficient(raceKey, k, sub);
+
+  if (!lockSkills) {
+    const classKoLabel = k === "-" ? "" : CLASSES[k].ko;
+    setSkills(computeClassSkills(classKoLabel, bg));
+  }
+}
+
+ function rollBackground() {
+  if (lockBG) return;
+  const b = choice(BACK_KO);
+  setBg(b);
+
+  if (!lockSkills) {
+    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+    setSkills(computeClassSkills(classKoLabel, b));
+  }
+}
+
   function rollStatsBtn() {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
@@ -1032,50 +1064,51 @@ export default function App() {
     setSkills(picks);
   }
 
-  function rollAll() {
-    let r = raceKey, sr = subraceKo;
-    let k = classKey, sk = subclassKo;
-    let b = bg;
+ function rollAll() {
+  let r = raceKey, sr = subraceKo;
+  let k = classKey, sk = subclassKo;
+  let b = bg;
 
-    if (!lockRace) {
-      const rKeys = Object.keys(RACES) as (keyof typeof RACES)[];
-      r = choice(rKeys);
-      sr = RACES[r].subs ? choice(RACES[r].subs!) : "-";
-    }
-    if (!lockClass) {
-      const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-      k = choice(cKeys);
-      sk = choice(CLASSES[k].subclasses);
-    }
-    if (!lockBG) b = choice(BACK_KO);
-
-    setRaceKey(r); setSubraceKo(sr);
-    setClassKey(k); setSubclassKo(sk);
-    setBg(b);
-
-    if (!lockBody) {
-      const cand = allowedBodyTypes(r);
-      setBodyType(choice(cand));
-    }
-
-    const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
-    setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
-
-    window.setTimeout(()=>{
-      recomputeWeaponsProficient();
-      if (!lockSkills) {
-        const classKoLabel = k === "-" ? "" : CLASSES[k].ko;
-        setSkills(computeClassSkills(classKoLabel, b));
-      }
-    },0);
-
-    if (k==="Cleric") {
-      const pool = computeClericDeityPool(r, sr);
-      if (!pool.includes(deity)) setDeity(choice(pool));
-    } else {
-      setDeity("");
-    }
+  if (!lockRace) {
+    const rKeys = Object.keys(RACES) as (keyof typeof RACES)[];
+    r = choice(rKeys);
+    sr = RACES[r].subs ? choice(RACES[r].subs!) : "-";
   }
+  if (!lockClass) {
+    const cKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
+    k = choice(cKeys);
+    sk = choice(CLASSES[k].subclasses);
+  }
+  if (!lockBG) b = choice(BACK_KO);
+
+  setRaceKey(r); setSubraceKo(sr);
+  setClassKey(k); setSubclassKo(sk);
+  setBg(b);
+
+  if (!lockBody) {
+    const cand = allowedBodyTypes(r);
+    setBodyType(choice(cand));
+  }
+
+  const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
+  setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
+
+  // 즉시 최신 선택으로 재계산
+  recomputeWeaponsProficient(r, k, sk);
+
+  if (!lockSkills) {
+    const classKoLabel = k === "-" ? "" : CLASSES[k].ko;
+    setSkills(computeClassSkills(classKoLabel, b));
+  }
+
+  if (k === "Cleric") {
+    const pool = computeClericDeityPool(r, sr);
+    if (!pool.includes(deity)) setDeity(choice(pool));
+  } else {
+    setDeity("");
+  }
+}
+
 
   /** ===== 주사위/승자 ===== */
   function handleRollDice(){
