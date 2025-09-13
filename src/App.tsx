@@ -454,7 +454,7 @@ function computeClassSkills(classKo: string, bgSel: Background): SkillKey[] {
   return sampleN(pool, cfg.n);
 }
 function bgLabel(bg: Background, lang: Lang="ko") {
-  if (bg === "-") return "-";
+  if (bg === "-") return ""; // 초기 표시에 '-' 숨김
   return lang === "ko" ? bg : BACK_EN[bg];
 }
 
