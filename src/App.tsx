@@ -1114,8 +1114,8 @@ const [lockStat, setLockStat] = useState<Record<Abil, boolean>>({
   STR:false, DEX:false, CON:false, INT:false, WIS:false, CHA:false,
 });
 // +2 / +1 보너스 잠금
-const [lockPb2] = useState(false);
-const [lockPb1] = useState(false);
+const [lockPb2, setLockPb2] = useState(false);
+const [lockPb1, setLockPb1] = useState(false);
 
     // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
     const [bodyType, setBodyType] = useState<BodyType | null>(null);
@@ -1213,28 +1213,40 @@ function rollClass() {
   const { base, bonus2, bonus1 } = rollPointBuyWithBonuses();
 
   // 잠금이 있으면 기존 선택 유지, 없으면 새 랜덤 사용
-  const b2 = (lockPb2 && pbBonus2) ? pbBonus2 : bonus2;
-  let   b1 = (lockPb1 && pbBonus1) ? pbBonus1 : bonus1;
+  let b2 = (lockPb2 && pbBonus2) ? pbBonus2 : bonus2;
+  let b1 = (lockPb1 && pbBonus1) ? pbBonus1 : bonus1;
 
-  // 둘 다 잠금이 아니고, 우연히 같은 능력치가 걸리면 겹치지 않도록 조정
-  if (!(lockPb1 && pbBonus1) && !(lockPb2 && pbBonus2) && b1 === b2) {
-    const alts = ABILS.filter(a => a !== b2);
-    b1 = alts[rand(alts.length)];
+  // ★ 겹침 방지: 잠금 상태에 따라 "잠기지 않은 쪽"을 옮긴다
+  if (b1 && b2 && b1 === b2) {
+    if (lockPb2 && !lockPb1) {
+      // +2는 고정, +1만 다른 능력으로 이동
+      const alts = ABILS.filter(a => a !== b2);
+      b1 = alts[rand(alts.length)];
+    } else if (!lockPb2 && lockPb1) {
+      // +1은 고정, +2만 다른 능력으로 이동
+      const alts = ABILS.filter(a => a !== b1);
+      b2 = alts[rand(alts.length)];
+    } else {
+      // 둘 다 잠금 아님 → 기존처럼 +1을 옮김
+      const alts = ABILS.filter(a => a !== b2);
+      b1 = alts[rand(alts.length)];
+    }
   }
 
   const final = { ...base };
   if (b2) final[b2] = Math.min(17, final[b2] + 2);
-  if (b1) final[b1] = Math.min(16, final[b1] + 1); // ★ +1 상한 16
+  if (b1) final[b1] = Math.min(16, final[b1] + 1); // +1 상한 16
+
   setPbBonus2(b2 ?? null);
   setPbBonus1(b1 ?? null);
 
-  // 개별 능력치 잠금(lockStat)은 그대로 존중
   setStats(prev => {
     const next = { ...prev };
     for (const a of ABILS) if (!lockStat[a]) next[a] = final[a];
     return next;
   });
 }
+
 
 function rollWeaponsBtn(overrides?: {
   raceKey?: keyof typeof RACES | "-";
@@ -1378,20 +1390,31 @@ function rollAll() {
   // 3) 출신
   if (!lockBackground) setBg(choice(BACK_KO));
 
- // 4) 능력치
+// 4) 능력치
 {
   const { base, bonus2, bonus1 } = rollPointBuyWithBonuses();
 
-  const b2 = (lockPb2 && pbBonus2) ? pbBonus2 : bonus2;
-  let   b1 = (lockPb1 && pbBonus1) ? pbBonus1 : bonus1;
-  if (!(lockPb1 && pbBonus1) && !(lockPb2 && pbBonus2) && b1 === b2) {
-    const alts = ABILS.filter(a => a !== b2);
-    b1 = alts[rand(alts.length)];
+  let b2 = (lockPb2 && pbBonus2) ? pbBonus2 : bonus2;
+  let b1 = (lockPb1 && pbBonus1) ? pbBonus1 : bonus1;
+
+  // ★ 겹침 방지(rollAll 버전)
+  if (b1 && b2 && b1 === b2) {
+    if (lockPb2 && !lockPb1) {
+      const alts = ABILS.filter(a => a !== b2);
+      b1 = alts[rand(alts.length)];
+    } else if (!lockPb2 && lockPb1) {
+      const alts = ABILS.filter(a => a !== b1);
+      b2 = alts[rand(alts.length)];
+    } else {
+      const alts = ABILS.filter(a => a !== b2);
+      b1 = alts[rand(alts.length)];
+    }
   }
 
   const final = { ...base };
   if (b2) final[b2] = Math.min(17, final[b2] + 2);
-if (b1) final[b1] = Math.min(16, final[b1] + 1); // ★ +1 상한 16
+  if (b1) final[b1] = Math.min(16, final[b1] + 1);
+
   setPbBonus2(b2 ?? null);
   setPbBonus1(b1 ?? null);
   setStats(prev => {
@@ -1971,6 +1994,18 @@ function excludeFeatItem(detailLine: string){
     </div>
 {/* 능력치 & 보너스(행별 배정) */}
 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+  {/* (+2 / +1) 글로벌 고정 스위치 */}
+<div style={{ display:"flex", justifyContent:"flex-end", gap:12, marginTop:4 }}>
+  <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+    <span>+2 {L[lang].locks}</span>
+    <input type="checkbox" checked={lockPb2} onChange={(e)=>setLockPb2(e.target.checked)} />
+  </label>
+  <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+    <span>+1 {L[lang].locks}</span>
+    <input type="checkbox" checked={lockPb1} onChange={(e)=>setLockPb1(e.target.checked)} />
+  </label>
+</div>
+
   {/* 헤더 줄 */}
   <div
     style={{
