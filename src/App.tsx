@@ -1438,25 +1438,28 @@ function rollAll() {
 
 // === (+2 / +1) 행별 체크박스용 토글 핸들러 ===
 function togglePb2(a: Abil, checked: boolean) {
-  if (lockPb2) return;
   setStats(prev => {
     const s = { ...prev };
 
     // 기존 +2 회수
-if (pbBonus2) s[pbBonus2] = Math.max(8, s[pbBonus2] - 2);
+    if (pbBonus2) s[pbBonus2] = Math.max(8, s[pbBonus2] - 2);
 
     let nextPb2: Abil | null = null;
     let nextPb1 = pbBonus1;
 
     if (checked) {
-      // 같은 능력치에 +1이 걸려 있으면 먼저 해제
+      // 같은 능력치에 +1이 걸려 있으면 해제(+1 잠금도 해제)
       if (pbBonus1 === a) {
-s[a] = Math.max(8, s[a] - 1);
+        s[a] = Math.max(8, s[a] - 1);
         nextPb1 = null;
+        setLockPb1(false);
       }
-      s[a] = Math.min(17, s[a] + 2); // ★ +2 상한 17
-
+      s[a] = Math.min(17, s[a] + 2); // +2 상한 17
       nextPb2 = a;
+      setLockPb2(true);              // 체크 = 고정
+    } else {
+      // 현재 줄을 해제하면 잠금 해제
+      if (pbBonus2 === a) setLockPb2(false);
     }
 
     setPbBonus2(nextPb2);
@@ -1464,27 +1467,29 @@ s[a] = Math.max(8, s[a] - 1);
     return s;
   });
 }
-
 function togglePb1(a: Abil, checked: boolean) {
-  if (lockPb1) return;
   setStats(prev => {
     const s = { ...prev };
 
     // 기존 +1 회수
     if (pbBonus1) s[pbBonus1] = Math.max(8, s[pbBonus1] - 1);
 
-
     let nextPb1: Abil | null = null;
     let nextPb2 = pbBonus2;
 
     if (checked) {
-      // 같은 능력치에 +2가 걸려 있으면 먼저 해제
+      // 같은 능력치에 +2가 걸려 있으면 해제(+2 잠금도 해제)
       if (pbBonus2 === a) {
-s[a] = Math.max(8, s[a] - 2);
+        s[a] = Math.max(8, s[a] - 2);
         nextPb2 = null;
+        setLockPb2(false);
       }
-      s[a] = Math.min(16, s[a] + 1); // ★ +1 상한 16
+      s[a] = Math.min(16, s[a] + 1); // +1 상한 16
       nextPb1 = a;
+      setLockPb1(true);              // 체크 = 고정
+    } else {
+      // 현재 줄을 해제하면 잠금 해제
+      if (pbBonus1 === a) setLockPb1(false);
     }
 
     setPbBonus1(nextPb1);
@@ -1492,6 +1497,7 @@ s[a] = Math.max(8, s[a] - 2);
     return s;
   });
 }
+
 
   /** ===== 주사위/승자 ===== */
  function handleRollDice(){
@@ -2063,22 +2069,24 @@ function excludeFeatItem(detailLine: string){
 
       {/* +2 체크: 체크박스만 */}
       <label style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <input
-          type="checkbox"
-          checked={pbBonus2 === a}
-          disabled={lockPb2}
-          onChange={(e) => togglePb2(a, e.target.checked)}
-        />
+      <input
+  type="checkbox"
+  checked={pbBonus2 === a}
+  disabled={lockPb2 && pbBonus2 !== a}  // 잠금이면 '현재 선택된 줄'만 토글 허용(해제=잠금 해제)
+  onChange={(e) => togglePb2(a, e.target.checked)}
+/>
+
       </label>
 
       {/* +1 체크: 체크박스만 */}
       <label style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
         <input
-          type="checkbox"
-          checked={pbBonus1 === a}
-          disabled={lockPb1}
-          onChange={(e) => togglePb1(a, e.target.checked)}
-        />
+  type="checkbox"
+  checked={pbBonus1 === a}
+  disabled={lockPb1 && pbBonus1 !== a}  // 잠금이면 '현재 선택된 줄'만 토글 허용
+  onChange={(e) => togglePb1(a, e.target.checked)}
+/>
+
       </label>
     </div>
   ))}
