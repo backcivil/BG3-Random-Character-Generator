@@ -1528,7 +1528,7 @@ function excludeFeatItem(detailLine: string){
                 <button onClick={()=>{ rollClass(); }} style={btn}>{T.onlyClass}</button>
                 <button onClick={()=>{ rollBackground(); }} style={btn}>{T.onlyBG}</button>
                 <button onClick={rollStatsBtn} style={btn}>{T.rollStats}</button>
-                <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
+                <button onClick={() => rollWeaponsBtn()} style={btn}>{T.rerollWeapons}</button>
                 <button onClick={rollAny2Weapons} style={btn}>{T.any2Weapons}</button>
                 <button onClick={rollSkillsBtn} style={btn}>{T.rollSkills}</button>
                 <button onClick={rollBodyTypeBtn} style={btn}>{T.onlyBodyType}</button>
