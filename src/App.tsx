@@ -1420,7 +1420,7 @@ function togglePb2(a: Abil, checked: boolean) {
     const s = { ...prev };
 
     // 기존 +2 회수
-s[pbBonus2] = Math.max(8, s[pbBonus2] - 2);
+if (pbBonus2) s[pbBonus2] = Math.max(8, s[pbBonus2] - 2);
 
     let nextPb2: Abil | null = null;
     let nextPb1 = pbBonus1;
@@ -2012,10 +2012,7 @@ function excludeFeatItem(detailLine: string){
 const v = Math.max(8, Math.min(15, parseInt(e.target.value || "8", 10)));
           setStats((prev) => ({ ...prev, [a]: v }));
         }}
-       <input
-  type="number"
-  ...
-  style={{ ...input, minWidth:0, width:110, boxSizing:"border-box" }}
+     style={{ ...input, minWidth: 0, width: 110, boxSizing: "border-box" }}
 />
 
       />
