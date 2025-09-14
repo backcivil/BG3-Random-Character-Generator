@@ -996,6 +996,10 @@ export default function App() {
   const [pbBonus1, setPbBonus1] = useState<Abil | null>(null);
   const [weaponsKO, setWeaponsKO] = useState<string[]>([]);
   const [skills, setSkills] = useState<SkillKey[]>([]);
+    const [lockWeapons, setLockWeapons] = useState(false);
+const [lockSkills, setLockSkills]   = useState(false);
+const [lockBodyType, setLockBodyType] = useState(false);
+
     // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
     const [bodyType, setBodyType] = useState<BodyType | null>(null);
 
@@ -1009,10 +1013,10 @@ useEffect(() => {
 }, [classKey, bg]);
 useEffect(() => {
   const allowed = allowedBodyTypes(raceKey);
+  // 현재 값이 허용되지 않으면 종족 제약에 맞춰 보정(고정 여부와 관계없이 규칙 우선)
   if (bodyType && !allowed.includes(bodyType)) {
     setBodyType(choice(allowed));
   }
-  // bodyType이 비어있으면 그대로 둡니다(사용자가 직접 굴릴 수 있음)
 }, [raceKey]);
 
 
@@ -1078,11 +1082,13 @@ useEffect(() => {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
- function rollWeaponsBtn() {
+function rollWeaponsBtn() {
+  if (lockWeapons) return; // ★ 고정 시 변경 금지
+
   const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
   const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
 
-  // ★ 초기 진입(종족/클래스 미선택)에는 무기 표시 비움
+  // 초기 진입(종족/클래스 미선택)에는 무기 표시 비움
   if (!raceKoLabel && !classKoLabel) {
     setWeaponsKO([]);
     return;
@@ -1096,16 +1102,24 @@ useEffect(() => {
   setWeaponsKO(picks);
 }
 
-  function rollAny2Weapons() { setWeaponsKO(randomAny2KO()); }
-  function rollSkillsBtn() {
-    const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-    const picks = computeClassSkills(classKoLabel, bg);
-    setSkills(picks);
-  }
-    function rollBodyTypeBtn() {
+
+  function rollAny2Weapons() {
+  if (lockWeapons) return; // ★ 고정 시 변경 금지
+  setWeaponsKO(randomAny2KO());
+}
+function rollSkillsBtn() {
+  if (lockSkills) return; // ★ 고정 시 변경 금지
+  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const picks = computeClassSkills(classKoLabel, bg);
+  setSkills(picks);
+}
+
+ function rollBodyTypeBtn() {
+  if (lockBodyType) return; // ★ 고정 시 변경 금지
   const allowed = allowedBodyTypes(raceKey);
   setBodyType(choice(allowed));
 }
+
 
  function rollAll() {
   // 1) 종족
@@ -1468,18 +1482,75 @@ function excludeFeatItem(detailLine: string){
               </div>
 
               {/* 무기 선택 */}
-              <div style={row}>
-                <label style={label}>{T.weapons}</label>
-                <button style={btn} onClick={()=>{ setTempWeapons(new Set(weaponsKO)); setShowWeaponPicker(true); }}>{T.openPicker}</button>
-                <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>{weaponsKO.join(", ")}</div>
-              </div>
+           <div style={row}>
+  <label style={label}>{T.weapons}</label>
+  <button
+    style={btn}
+    onClick={() => { setTempWeapons(new Set(weaponsKO)); setShowWeaponPicker(true); }}
+    disabled={lockWeapons}
+    title={lockWeapons ? "고정되어 있음" : ""}
+  >
+    {T.openPicker}
+  </button>
+  <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
+    {weaponsKO.join(", ")}
+  </div>
+  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+  <input
+    type="checkbox"
+    checked={lockWeapons}
+    onChange={(e)=>setLockWeapons(e.target.checked)}
+  />
+</div>
+
 
               {/* 기술 선택 */}
-              <div style={row}>
-                <label style={label}>{T.skills}</label>
-                <button style={btn} onClick={()=>{ setTempSkills(new Set(skills)); setShowSkillPicker(true); }}>{T.openPicker}</button>
-                <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>{skills.map(skillLabel).join(", ")}</div>
-              </div>
+             <div style={row}>
+  <label style={label}>{T.skills}</label>
+  <button
+    style={btn}
+    onClick={() => { setTempSkills(new Set(skills)); setShowSkillPicker(true); }}
+    disabled={lockSkills}
+    title={lockSkills ? "고정되어 있음" : ""}
+  >
+    {T.openPicker}
+  </button>
+  <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
+    {skills.map(skillLabel).join(", ")}
+  </div>
+  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+  <input
+    type="checkbox"
+    checked={lockSkills}
+    onChange={(e)=>setLockSkills(e.target.checked)}
+  />
+</div>
+//신체유형
+<div style={row}>
+  <label style={label}>{T.bodyType}</label>
+  <select
+    value={bodyType ?? ""}
+    onChange={(e:any)=>{
+      const v = e.target.value === "" ? null : (parseInt(e.target.value,10) as BodyType);
+      setBodyType(v);
+    }}
+    style={{...select, minWidth:180, maxWidth:200}}
+    disabled={lockBodyType}
+    title={lockBodyType ? "고정되어 있음" : ""}
+  >
+    <option value="">-</option>
+    {allowedBodyTypes(raceKey).map((bt)=>(
+      <option key={bt} value={bt}>{bodyTypeLabel(bt, lang)}</option>
+    ))}
+  </select>
+  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+  <input
+    type="checkbox"
+    checked={lockBodyType}
+    onChange={(e)=>setLockBodyType(e.target.checked)}
+  />
+</div>
+
             </section>
 
             {/* 클래스별 특성 */}
