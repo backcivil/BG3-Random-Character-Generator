@@ -1633,6 +1633,18 @@ function excludeFeatItem(detailLine: string){
       {weaponsKO.join(", ")}
     </div>
   </div>
+  {/* 무기 전체 고정 */}
+  <div style={{ ...row, marginTop:4 }}>
+    <div style={{ width:72 }} />
+    <label style={{display:"flex", alignItems:"center", gap:6}}>
+      <input
+        type="checkbox"
+        checked={lockWeapons}
+        onChange={(e)=>setLockWeapons(e.target.checked)}
+      />
+      <span>무기 전체 고정</span>
+    </label>
+  </div>
 
   {/* 무기 개별 잠금 토글 */}
   <div style={{ ...row, marginTop:6 }}>
@@ -1669,6 +1681,18 @@ function excludeFeatItem(detailLine: string){
     <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
       {skills.map(skillLabel).join(", ")}
     </div>
+  </div>
+  {/* 기술 전체 고정 */}
+  <div style={{ ...row, marginTop:4 }}>
+    <div style={{ width:72 }} />
+    <label style={{display:"flex", alignItems:"center", gap:6}}>
+      <input
+        type="checkbox"
+        checked={lockSkills}
+        onChange={(e)=>setLockSkills(e.target.checked)}
+      />
+      <span>기술 전체 고정</span>
+    </label>
   </div>
 
   {/* 기술 개별 잠금 토글 */}
@@ -1717,6 +1741,26 @@ function excludeFeatItem(detailLine: string){
       onChange={(e)=>setLockBodyType(e.target.checked)}
     />
   </div>
+    {/* 능력치 개별 고정 */}
+  <div style={{ ...row, marginTop:8 }}>
+    <label style={label}>{T.abilities}</label>
+    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+      {ABILS.map((a)=>(
+        <label
+          key={a}
+          style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}
+        >
+          <input
+            type="checkbox"
+            checked={lockStat[a]}
+            onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
+          />
+          <span>{abilLabel(a)}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+
 </section>
 
             {/* 클래스별 특성 */}
