@@ -1114,8 +1114,8 @@ const [lockStat, setLockStat] = useState<Record<Abil, boolean>>({
   STR:false, DEX:false, CON:false, INT:false, WIS:false, CHA:false,
 });
 // +2 / +1 보너스 잠금
-const [lockPb2, setLockPb2] = useState(false);
-const [lockPb1, setLockPb1] = useState(false);
+const [lockPb2] = useState(false);
+const [lockPb1] = useState(false);
 
     // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
     const [bodyType, setBodyType] = useState<BodyType | null>(null);
