@@ -2015,9 +2015,6 @@ function excludeFeatItem(detailLine: string){
   style={{ ...input, minWidth: 0, width: 110, boxSizing: "border-box" }}
 />
 
-
-      />
-
       {/* 개별 고정: 체크박스만 */}
       <label style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
         <input
