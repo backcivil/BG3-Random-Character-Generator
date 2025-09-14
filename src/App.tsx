@@ -1366,7 +1366,6 @@ function excludeFeatItem(detailLine: string){
   }
 
   /** ===== 옵션 ===== */
-  const raceOptions = Object.keys(RACES) as (keyof typeof RACES)[];
   const classOptions = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
   const allSkills = Object.keys(SK.KO) as SkillKey[];
 
