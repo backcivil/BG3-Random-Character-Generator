@@ -1169,16 +1169,27 @@ function rollWeaponsBtn() {
 }
 
 function rollSkillsBtn() {
-  if (lockSkills) return; // 전체 잠금
-  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-  const base = computeClassSkills(classKoLabel, bg);      // 클래스/출신 기반 추천
-  const desired = Math.max(lockSkillSet.size, base.length);
-  const pool = base.filter(s => !lockSkillSet.has(s));
-  const fallback = (Object.keys(SK.KO) as SkillKey[]).filter(s => !lockSkillSet.has(s));
+  if (lockSkills) return; // 전체 잠금이면 변경 금지
 
-  const next = mergeLocked(Array.from(lockSkillSet), pool, desired, fallback) as SkillKey[];
+  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+  const targetN = CLASS_SK_CHOICE[classKoLabel]?.n ?? 2; // 클래스별 정확한 개수
+
+  // 클래스/출신 기반 추천(출신 2개는 이미 제외)
+  const base = computeClassSkills(classKoLabel, bg);
+
+  //  잠금된 스킬이 많아도 클래스 허용 개수로 컷
+  const lockedTrimmed = Array.from(lockSkillSet).slice(0, targetN);
+
+  // 중복 방지
+  const pool = base.filter(s => !lockedTrimmed.includes(s));
+  const fallback = (Object.keys(SK.KO) as SkillKey[])
+    .filter(s => !lockedTrimmed.includes(s));
+
+  // 병합(= 잠금 유지 + 남는 칸 채우기) — 결과는 정확히 targetN개
+  const next = mergeLocked(lockedTrimmed, pool, targetN, fallback) as SkillKey[];
   setSkills(next);
 }
+
 
  function rollBodyTypeBtn() {
   if (lockBodyType) return; // ★ 고정 시 변경 금지
