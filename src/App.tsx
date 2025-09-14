@@ -1699,7 +1699,7 @@ function excludeFeatItem(detailLine: string){
             <section style={{ border:"1px solid #e5e7eb", borderRadius:12, padding:16, marginTop:16 }}>
               <h2 style={{ fontSize:20, fontWeight:700, margin:"0 0 12px" }}>{T.diceTitle}</h2>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                <input value={diceExpr} onChange={(e)=>setDiceExpr(e.target.value)} placeholder={T.dicePH} style={{...input, minWidth:220, maxWidth:280}}/>
+                <input value={diceExpr} onChange={(e)=>setDiceExpr(e.target.value)}  style={{...input, minWidth:220, maxWidth:280}}/>
                 <button onClick={handleRollDice} style={btn}>{T.rollDice}</button>
               </div>
               {diceDetail && <div style={{ marginTop:8, color:"#374151" }}>{diceDetail}</div>}
