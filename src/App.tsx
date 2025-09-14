@@ -1970,80 +1970,84 @@ function excludeFeatItem(detailLine: string){
     </div>
 {/* 능력치 & 보너스(행별 배정) */}
 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
- {/* 헤더 줄 */}
-<div style={{
-  display:"grid",
-  gridTemplateColumns:"72px 110px 60px 70px 70px",
-  alignItems:"center",
-  gap:8,
-  marginTop:8
-}}>
-  <div style={{ color:"#6b7280" }}>{T.abilities}</div>
-  <div />
-  <div style={{ color:"#6b7280", textAlign:"center" }}>{L[lang].locks}</div>
-  <div style={{ color:"#6b7280", textAlign:"center" }}>+2</div>
-  <div style={{ color:"#6b7280", textAlign:"center" }}>+1</div>
-</div>
-
-
-  {/* 행들 */}
-  {ABILS.map(a=>(
-    <div key={a} style={{
+  {/* 헤더 줄 */}
+  <div
+    style={{
       display:"grid",
       gridTemplateColumns:"72px 110px 60px 70px 70px",
       alignItems:"center",
-      gap:8
-    }}>
+      gap:8,
+      marginTop:8
+    }}
+  >
+    <div style={{ color:"#6b7280" }}>{T.abilities}</div>
+    <div />
+    <div style={{ color:"#6b7280", textAlign:"center" }}>{L[lang].locks}</div>
+    <div style={{ color:"#6b7280", textAlign:"center" }}>+2</div>
+    <div style={{ color:"#6b7280", textAlign:"center" }}>+1</div>
+  </div>
+
+  {/* 행들 */}
+  {ABILS.map((a) => (
+    <div
+      key={a}
+      style={{
+        display:"grid",
+        gridTemplateColumns:"72px 110px 60px 70px 70px",
+        alignItems:"center",
+        gap:8
+      }}
+    >
       {/* 이름 */}
       <div>{abilLabel(a)}</div>
 
-      {/* 값 입력 */}
-<input
-  type="number"
-  min={1}
-  max={15}  // ★ 최대 15
-  value={stats[a]}
-  onChange={(e)=>{
-    const v = Math.max(1, Math.min(15, parseInt(e.target.value||"1",10))); // ★ 15로 clamp
-    setStats(prev=>({ ...prev, [a]: v }));
-  }}
-  style={{ ...input, minWidth:0, width:110 }}  // ★ minWidth:0 로 input 상수의 minWidth:200 덮어쓰기
-/>
+      {/* 숫자 입력: 숫자만 네모, 최대 15 */}
+      <input
+        type="number"
+        min={1}
+        max={15}  // 입력 상한 15
+        value={stats[a]}
+        onChange={(e) => {
+          const v = Math.max(1, Math.min(15, parseInt(e.target.value || "1", 10)));
+          setStats((prev) => ({ ...prev, [a]: v }));
+        }}
+        style={{ ...input, width:110 }}
+      />
 
-      {/* 개별 고정 */}
-<div style={{ display:"flex", justifyContent:"center" }}>
-  <input
-    type="checkbox"
-    checked={lockStat[a]}
-    onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
-  />
-</div>
+      {/* 개별 고정: 체크박스만 */}
+      <label style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <input
+          type="checkbox"
+          checked={lockStat[a]}
+          onChange={(e) =>
+            setLockStat((prev) => ({ ...prev, [a]: e.target.checked }))
+          }
+        />
+      </label>
 
-      {/* +2 체크 */}
-<div style={{ display:"flex", justifyContent:"center" }}>
-  <input
-    type="checkbox"
-    checked={pbBonus2===a}
-    disabled={lockPb2}
-    onChange={(e)=>togglePb2(a, e.target.checked)}
-  />
-</div>
+      {/* +2 체크: 체크박스만 */}
+      <label style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <input
+          type="checkbox"
+          checked={pbBonus2 === a}
+          disabled={lockPb2}
+          onChange={(e) => togglePb2(a, e.target.checked)}
+        />
+      </label>
 
-
-      {/* +1 체크 */}
-   /* +1 체크 */
-<div style={{ display:"flex", justifyContent:"center" }}>
-  <input
-    type="checkbox"
-    checked={pbBonus1===a}
-    disabled={lockPb1}
-    onChange={(e)=>togglePb1(a, e.target.checked)}
-  />
-</div>
-
+      {/* +1 체크: 체크박스만 */}
+      <label style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <input
+          type="checkbox"
+          checked={pbBonus1 === a}
+          disabled={lockPb1}
+          onChange={(e) => togglePb1(a, e.target.checked)}
+        />
+      </label>
+    </div>
   ))}
 </div>
-</div> 
+
 </section>
 
 
