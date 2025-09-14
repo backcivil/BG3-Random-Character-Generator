@@ -1224,8 +1224,7 @@ function rollClass() {
 
   const final = { ...base };
   if (b2) final[b2] = Math.min(17, final[b2] + 2);
-  if (b1) final[b1] = Math.min(17, final[b1] + 1);
-
+  if (b1) final[b1] = Math.min(16, final[b1] + 1); // ★ +1 상한 16
   setPbBonus2(b2 ?? null);
   setPbBonus1(b1 ?? null);
 
@@ -1392,8 +1391,7 @@ function rollAll() {
 
   const final = { ...base };
   if (b2) final[b2] = Math.min(17, final[b2] + 2);
-  if (b1) final[b1] = Math.min(17, final[b1] + 1);
-
+if (b1) final[b1] = Math.min(16, final[b1] + 1); // ★ +1 상한 16
   setPbBonus2(b2 ?? null);
   setPbBonus1(b1 ?? null);
   setStats(prev => {
@@ -1433,7 +1431,8 @@ function togglePb2(a: Abil, checked: boolean) {
         s[a] = Math.max(1, s[a] - 1);
         nextPb1 = null;
       }
-      s[a] = Math.min(20, s[a] + 2);
+      s[a] = Math.min(17, s[a] + 2); // ★ +2 상한 17
+
       nextPb2 = a;
     }
 
@@ -1460,7 +1459,7 @@ function togglePb1(a: Abil, checked: boolean) {
         s[a] = Math.max(1, s[a] - 2);
         nextPb2 = null;
       }
-      s[a] = Math.min(20, s[a] + 1);
+      s[a] = Math.min(16, s[a] + 1); // ★ +1 상한 16
       nextPb1 = a;
     }
 
@@ -1971,26 +1970,21 @@ function excludeFeatItem(detailLine: string){
     </div>
 {/* 능력치 & 보너스(행별 배정) */}
 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-  {/* 헤더 줄 */}
-  <div style={{
-    display:"grid",
-    gridTemplateColumns:"72px 110px 60px 70px 70px",
-    alignItems:"center",
-    gap:8,
-    marginTop:8
-  }}>
-    <div style={{ color:"#6b7280" }}>{T.abilities}</div>
-    <div />
-    <div style={{ color:"#6b7280", textAlign:"center" }}>{L[lang].locks}</div>
-    <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
-      <span>+2</span>
-      <input type="checkbox" checked={lockPb2} onChange={e=>setLockPb2(e.target.checked)} />
-    </label>
-    <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
-      <span>+1</span>
-      <input type="checkbox" checked={lockPb1} onChange={e=>setLockPb1(e.target.checked)} />
-    </label>
-  </div>
+ {/* 헤더 줄 */}
+<div style={{
+  display:"grid",
+  gridTemplateColumns:"72px 110px 60px 70px 70px",
+  alignItems:"center",
+  gap:8,
+  marginTop:8
+}}>
+  <div style={{ color:"#6b7280" }}>{T.abilities}</div>
+  <div />
+  <div style={{ color:"#6b7280", textAlign:"center" }}>{L[lang].locks}</div>
+  <div style={{ color:"#6b7280", textAlign:"center" }}>+2</div>
+  <div style={{ color:"#6b7280", textAlign:"center" }}>+1</div>
+</div>
+
 
   {/* 행들 */}
   {ABILS.map(a=>(
@@ -2004,49 +1998,49 @@ function excludeFeatItem(detailLine: string){
       <div>{abilLabel(a)}</div>
 
       {/* 값 입력 */}
-      <input
-        type="number"
-        min={1} max={20}
-        value={stats[a]}
-        onChange={(e)=>{
-          const v = Math.max(1, Math.min(20, parseInt(e.target.value||"1",10)));
-          setStats(prev=>({ ...prev, [a]: v }));
-        }}
-        style={{ ...input, width:110 }}
-      />
+<input
+  type="number"
+  min={1}
+  max={15}  // ★ 최대 15
+  value={stats[a]}
+  onChange={(e)=>{
+    const v = Math.max(1, Math.min(15, parseInt(e.target.value||"1",10))); // ★ 15로 clamp
+    setStats(prev=>({ ...prev, [a]: v }));
+  }}
+  style={{ ...input, minWidth:0, width:110 }}  // ★ minWidth:0 로 input 상수의 minWidth:200 덮어쓰기
+/>
 
       {/* 개별 고정 */}
-      <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
-        <input
-          type="checkbox"
-          checked={lockStat[a]}
-          onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
-        />
-        <span style={{ fontSize:12, color:"#6b7280" }}>고정</span>
-      </label>
+<div style={{ display:"flex", justifyContent:"center" }}>
+  <input
+    type="checkbox"
+    checked={lockStat[a]}
+    onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
+  />
+</div>
 
       {/* +2 체크 */}
-      <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
-        <input
-          type="checkbox"
-          checked={pbBonus2===a}
-          disabled={lockPb2}
-          onChange={(e)=>togglePb2(a, e.target.checked)}
-        />
-        <span>+2</span>
-      </label>
+<div style={{ display:"flex", justifyContent:"center" }}>
+  <input
+    type="checkbox"
+    checked={pbBonus2===a}
+    disabled={lockPb2}
+    onChange={(e)=>togglePb2(a, e.target.checked)}
+  />
+</div>
+
 
       {/* +1 체크 */}
-      <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
-        <input
-          type="checkbox"
-          checked={pbBonus1===a}
-          disabled={lockPb1}
-          onChange={(e)=>togglePb1(a, e.target.checked)}
-        />
-        <span>+1</span>
-      </label>
-    </div>
+   /* +1 체크 */
+<div style={{ display:"flex", justifyContent:"center" }}>
+  <input
+    type="checkbox"
+    checked={pbBonus1===a}
+    disabled={lockPb1}
+    onChange={(e)=>togglePb1(a, e.target.checked)}
+  />
+</div>
+
   ))}
 </div>
 </div> 
