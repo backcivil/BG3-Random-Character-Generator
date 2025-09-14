@@ -8,6 +8,35 @@ const shuffle = <T,>(arr: readonly T[]) => {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 };
+  function deityPoolForUI(r: keyof typeof RACES | "-", sr: string): string[] {
+  const set = new Set(DEITIES_BASE);
+  if (r === "Githyanki") set.add("블라키스");
+  if (sr === "드웨가") set.add("라더궈");
+  return Array.from(set);
+}
+function racesHavingSub(subKo: string): (keyof typeof RACES)[] {
+  return (Object.keys(RACES) as (keyof typeof RACES)[])
+    .filter(k => (RACES[k].subs||[]).includes(subKo));
+}
+function classesHavingSub(subKo: string): (keyof typeof CLASSES)[] {
+  return (Object.keys(CLASSES) as (keyof typeof CLASSES)[])
+    .filter(k => CLASSES[k].subclasses.includes(subKo));
+}
+function mergeLocked<T>(locked: T[], pool: T[], desired: number, fallback: T[]): T[] {
+  const picks: T[] = Array.from(new Set(locked));
+  const p1 = pool.filter(x => !picks.includes(x));
+  while (picks.length < desired && p1.length) {
+    const x = choice(p1); picks.push(x);
+    p1.splice(p1.indexOf(x), 1);
+  }
+  const p2 = fallback.filter(x => !picks.includes(x));
+  while (picks.length < desired && p2.length) {
+    const x = choice(p2); picks.push(x);
+    p2.splice(p2.indexOf(x), 1);
+  }
+  return picks.slice(0, Math.max(desired, locked.length));
+}
+
 const sampleN = <T,>(arr: readonly T[], n: number) => shuffle(arr).slice(0, Math.max(0, Math.min(n, arr.length)));
 
 // ===== 주문 풀 유틸 (누적 풀/중복 방지) =====
@@ -198,6 +227,32 @@ function bodyTypeLabel(bt: BodyType, lang: Lang = "ko"): string {
          bt===3 ? "3(큰 여성)" :
                   "4(큰 남성)";
 }
+  <div style={{ ...row, alignItems:"flex-start" }}>
+  <label style={label}>{T.abilities}</label>
+  <div style={{ display:"grid", gridTemplateColumns:"repeat(3, minmax(0, 160px))", gap:8 }}>
+    {ABILS.map(a => (
+      <div key={a} style={{ border:"1px solid #e5e7eb", borderRadius:10, padding:8 }}>
+        <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{abilLabel(a)}</div>
+        <input
+          type="number" min={3} max={20}
+          value={stats[a]}
+          onChange={(e)=>setStats(prev=>({ ...prev, [a]: Math.max(3, Math.min(20, parseInt(e.target.value||"0",10))) }))}
+          style={{...input, width:96}}
+          disabled={false}
+        />
+        <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+          <input
+            type="checkbox"
+            checked={lockStat[a]}
+            onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
+          />
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
 
 /** ========= 배경/스킬 ========= */
 const BACK_KO = ["복사","사기꾼","범죄자","연예인","시골 영웅","길드 장인","귀족","이방인","현자","군인","부랑아"] as const;
@@ -999,6 +1054,22 @@ export default function App() {
     const [lockWeapons, setLockWeapons] = useState(false);
 const [lockSkills, setLockSkills]   = useState(false);
 const [lockBodyType, setLockBodyType] = useState(false);
+// 상위(카테고리) 잠금
+const [lockRace, setLockRace] = useState(false);
+const [lockSubrace, setLockSubrace] = useState(false);
+const [lockClass, setLockClass] = useState(false);
+const [lockSubclass, setLockSubclass] = useState(false);
+const [lockBackground, setLockBackground] = useState(false);
+const [lockDeity, setLockDeity] = useState(false);
+
+// 무기/기술 “개별 항목” 잠금
+const [lockWeaponSet, setLockWeaponSet] = useState<Set<string>>(new Set());
+const [lockSkillSet, setLockSkillSet] = useState<Set<SkillKey>>(new Set());
+
+// 스탯 개별 잠금
+const [lockStat, setLockStat] = useState<Record<Abil, boolean>>({
+  STR:false, DEX:false, CON:false, INT:false, WIS:false, CHA:false,
+});
 
     // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
     const [bodyType, setBodyType] = useState<BodyType | null>(null);
@@ -1058,41 +1129,60 @@ useEffect(() => {
   const classOut = classKey === "-" ? "" : (lang === "ko" ? CLASSES[classKey].ko : String(classKey));
 
   /** ===== 롤 핸들러 ===== */
-  function rollRace() {
-    const keys = Object.keys(RACES) as (keyof typeof RACES)[];
-    const r = choice(keys);
-    setRaceKey(r);
-    setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-");
-  }
- function rollClass() {
-  const keys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-  const k = choice(keys);
-  setClassKey(k);
-
-  const sc = choice(CLASSES[k].subclasses);
-  setSubclassKo(sc);
-
-  // Cleric이면 신앙도 함께 랜덤
-  if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
-  else setDeityKo("-");
+ function rollRace() {
+  if (lockRace) return;
+  const keys = (lockSubrace && subraceKo !== "-")
+    ? racesHavingSub(subraceKo)
+    : (Object.keys(RACES) as (keyof typeof RACES)[]);
+  const r = choice(keys.length ? keys : (Object.keys(RACES) as (keyof typeof RACES)[]));
+  setRaceKey(r);
+  if (!lockSubrace) setSubraceKo(RACES[r].subs ? choice(RACES[r].subs!) : "-");
 }
 
-  function rollBackground() { setBg(choice(BACK_KO)); }
+function rollClass() {
+  if (lockClass) return;
+  const keys = (lockSubclass && subclassKo !== "-")
+    ? classesHavingSub(subclassKo)
+    : (Object.keys(CLASSES) as (keyof typeof CLASSES)[]);
+  const k = choice(keys.length ? keys : (Object.keys(CLASSES) as (keyof typeof CLASSES)[]));
+  setClassKey(k);
+
+  if (!lockSubclass) {
+    const sc = choice(CLASSES[k].subclasses);
+    setSubclassKo(sc);
+  }
+  if (k === "Cleric") {
+    if (!lockDeity) setDeityKo(randomDeity(raceKey, subraceKo));
+  } else {
+    if (!lockDeity) setDeityKo("-");
+  }
+}
+
+
+ function rollBackground() { if (!lockBackground) setBg(choice(BACK_KO)); }
+
   function rollStatsBtn() {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
 function rollWeaponsBtn() {
-  if (lockWeapons) return; // ★ 고정 시 변경 금지
-
+  if (lockWeapons) return; // 전체 잠금
   const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
   const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
 
-  // 초기 진입(종족/클래스 미선택)에는 무기 표시 비움
-  if (!raceKoLabel && !classKoLabel) {
-    setWeaponsKO([]);
-    return;
-  }
+  const base = computeWeapons(
+    raceKoLabel,
+    classKoLabel,
+    subclassKo !== "-" ? subclassKo : undefined
+  );
+  const desired = Math.max(lockWeaponSet.size, base.length || 2);
+  const pool = base;
+  const fallback = ALL_WEAPONS_KO_LIST;
+
+  const next = mergeLocked(Array.from(lockWeaponSet), pool, desired, fallback);
+  setWeaponsKO(next);
+}
+
 
   const picks = computeWeapons(
     raceKoLabel,
@@ -1103,15 +1193,23 @@ function rollWeaponsBtn() {
 }
 
 
-  function rollAny2Weapons() {
-  if (lockWeapons) return; // ★ 고정 시 변경 금지
-  setWeaponsKO(randomAny2KO());
+ function rollAny2Weapons() {
+  if (lockWeapons) return; // 전체 잠금
+  const desired = Math.max(2, lockWeaponSet.size);
+  const next = mergeLocked(Array.from(lockWeaponSet), [], desired, ALL_WEAPONS_KO_LIST);
+  setWeaponsKO(next);
 }
+
 function rollSkillsBtn() {
-  if (lockSkills) return; // ★ 고정 시 변경 금지
+  if (lockSkills) return; // 전체 잠금
   const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-  const picks = computeClassSkills(classKoLabel, bg);
-  setSkills(picks);
+  const base = computeClassSkills(classKoLabel, bg);      // 클래스/출신 기반 추천
+  const desired = Math.max(lockSkillSet.size, base.length);
+  const pool = base.filter(s => !lockSkillSet.has(s));
+  const fallback = (Object.keys(SK.KO) as SkillKey[]).filter(s => !lockSkillSet.has(s));
+
+  const next = mergeLocked(Array.from(lockSkillSet), pool, desired, fallback) as SkillKey[];
+  setSkills(next);
 }
 
  function rollBodyTypeBtn() {
@@ -1121,37 +1219,57 @@ function rollSkillsBtn() {
 }
 
 
- function rollAll() {
-  // 1) 종족
-  const raceKeys = Object.keys(RACES) as (keyof typeof RACES)[];
-  const r = choice(raceKeys);
-  const sr = RACES[r].subs ? choice(RACES[r].subs!) : "-";
-  setRaceKey(r);
-  setSubraceKo(sr);
+function rollAll() {
+  // 1) 종족/서브종족
+  let r = raceKey, sr = subraceKo;
+  if (!lockRace) {
+    const raceKeys = (lockSubrace && sr !== "-") ? racesHavingSub(sr) : (Object.keys(RACES) as (keyof typeof RACES)[]);
+    r = choice(raceKeys.length ? raceKeys : (Object.keys(RACES) as (keyof typeof RACES)[]));
+    setRaceKey(r);
+  }
+  if (!lockSubrace) {
+    sr = RACES[r].subs ? choice(RACES[r].subs!) : "-";
+    setSubraceKo(sr);
+  }
 
-  // 2) 클래스
-  const classKeys = Object.keys(CLASSES) as (keyof typeof CLASSES)[];
-  const k = choice(classKeys);
-  const sc = choice(CLASSES[k].subclasses);
-  setClassKey(k);
-  setSubclassKo(sc);
+  // 2) 클래스/서브클래스
+  let k = classKey, sc = subclassKo;
+  if (!lockClass) {
+    const classKeys = (lockSubclass && sc !== "-") ? classesHavingSub(sc) : (Object.keys(CLASSES) as (keyof typeof CLASSES)[]);
+    k = choice(classKeys.length ? classKeys : (Object.keys(CLASSES) as (keyof typeof CLASSES)[]));
+    setClassKey(k);
+  }
+  if (!lockSubclass) {
+    sc = k === "-" ? "-" : choice(CLASSES[k].subclasses);
+    setSubclassKo(sc);
+  }
 
   // 3) 출신
-  const b = choice(BACK_KO);
-  setBg(b);
+  if (!lockBackground) setBg(choice(BACK_KO));
 
   // 4) 능력치
   const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
-  setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
+  setPbBonus2(bonus2); setPbBonus1(bonus1);
+  setStats(prev => {
+    const next = { ...prev };
+    for (const a of ABILS) if (!lockStat[a]) next[a] = final[a];
+    return next;
+  });
 
-  // 5) 신앙 (클레릭일 때만, 종족/서브종족 조건 반영)
-  if (k === "Cleric") setDeityKo(randomDeity(r, sr));
-  else setDeityKo("-");
-  // 6) 신체유형
-  setBodyType(choice(allowedBodyTypes(r)));
+  // 5) 신앙(클레릭일 때만)
+  if (k === "Cleric") {
+    if (!lockDeity) setDeityKo(randomDeity(r, sr));
+  } else {
+    if (!lockDeity) setDeityKo("-");
+  }
 
+  // 6) 신체유형(잠금 아닐 때만)
+  if (!lockBodyType) setBodyType(choice(allowedBodyTypes(r)));
 
+  // 7) 무기/기술 재계산(개별 잠금 반영)
+  setTimeout(() => { rollWeaponsBtn(); rollSkillsBtn(); }, 0);
 }
+
 
 
 
@@ -1423,8 +1541,16 @@ function excludeFeatItem(detailLine: string){
                 <select disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)} value={subraceKo} onChange={e=>setSubraceKo(e.target.value)} style={{...select, minWidth:180, maxWidth:200}}>
                   {(raceKey==="-" || !RACES[raceKey].subs) ? <option value="-">-</option> : RACES[raceKey].subs!.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
-                <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-                <input type="checkbox"/>
+               <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+<label style={{display:"flex", alignItems:"center", gap:6}}>
+  <input type="checkbox" checked={lockRace} onChange={(e)=>setLockRace(e.target.checked)} />
+  <span>종족</span>
+</label>
+<label style={{display:"flex", alignItems:"center", gap:6}}>
+  <input type="checkbox" checked={lockSubrace} onChange={(e)=>setLockSubrace(e.target.checked)} />
+  <span>서브</span>
+</label>
+
               </div>
 
               {/* 클래스 (한 줄 정리) */}
@@ -1450,6 +1576,30 @@ function excludeFeatItem(detailLine: string){
       <option key={k} value={k}>{lang==="ko" ? CLASSES[k].ko : k}</option>
     ))}
   </select>
+<span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+<label style={{display:"flex", alignItems:"center", gap:6}}>
+  <input type="checkbox" checked={lockClass} onChange={(e)=>setLockClass(e.target.checked)} />
+  <span>클래스</span>
+</label>
+<label style={{display:"flex", alignItems:"center", gap:6}}>
+  <input type="checkbox" checked={lockSubclass} onChange={(e)=>setLockSubclass(e.target.checked)} />
+  <span>서브</span>
+</label>
+{classKey === "Cleric" && (
+  <div style={row}>
+    <label style={label}>신앙</label>
+    <select
+      value={deityKo}
+      onChange={(e)=>setDeityKo(e.target.value)}
+      disabled={lockDeity}
+      style={{...select, minWidth:220, maxWidth:260}}
+    >
+      {deityPoolForUI(raceKey, subraceKo).map(d => <option key={d} value={d}>{d}</option>)}
+    </select>
+    <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+    <input type="checkbox" checked={lockDeity} onChange={(e)=>setLockDeity(e.target.checked)} />
+  </div>
+)}
 
   {/* 서브클래스 선택 */}
   <select
@@ -1477,8 +1627,9 @@ function excludeFeatItem(detailLine: string){
                   <option value="-">-</option>
                   {BACK_KO.map(b=><option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
                 </select>
-                <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-                <input type="checkbox"/>
+               <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
+<input type="checkbox" checked={lockBackground} onChange={(e)=>setLockBackground(e.target.checked)} />
+
               </div>
 
               {/* 무기 선택 */}
@@ -1494,14 +1645,23 @@ function excludeFeatItem(detailLine: string){
   </button>
   <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
     {weaponsKO.join(", ")}
-  </div>
-  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-  <input
-    type="checkbox"
-    checked={lockWeapons}
-    onChange={(e)=>setLockWeapons(e.target.checked)}
-  />
+ <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+  {weaponsKO.map(w => (
+    <label key={w} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
+      <input
+        type="checkbox"
+        checked={lockWeaponSet.has(w)}
+        onChange={(e)=>{
+          const n=new Set(lockWeaponSet);
+          e.target.checked ? n.add(w) : n.delete(w);
+          setLockWeaponSet(n);
+        }}
+      />
+      <span>{w}</span>
+    </label>
+  ))}
 </div>
+
 
 
               {/* 기술 선택 */}
@@ -1517,14 +1677,23 @@ function excludeFeatItem(detailLine: string){
   </button>
   <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
     {skills.map(skillLabel).join(", ")}
-  </div>
-  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-  <input
-    type="checkbox"
-    checked={lockSkills}
-    onChange={(e)=>setLockSkills(e.target.checked)}
-  />
+ <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+  {skills.map(s => (
+    <label key={s} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
+      <input
+        type="checkbox"
+        checked={lockSkillSet.has(s)}
+        onChange={(e)=>{
+          const n=new Set(lockSkillSet);
+          e.target.checked ? n.add(s) : n.delete(s);
+          setLockSkillSet(n);
+        }}
+      />
+      <span>{skillLabel(s)}</span>
+    </label>
+  ))}
 </div>
+
 //신체유형
 <div style={row}>
   <label style={label}>{T.bodyType}</label>
@@ -1608,58 +1777,120 @@ function excludeFeatItem(detailLine: string){
       </div>
 
       {/* 무기 픽커 */}
-      {showWeaponPicker && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:360 }}>
-            <h4 style={{ marginTop:0 }}>{T.weapons}</h4>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
-             {ALL_WEAPONS_KO_LIST.map((w: string)=>(
-  <label key={w} style={{ display:"flex", gap:8, alignItems:"center" }}>
-    <input
-      type="checkbox"
-      checked={tempWeapons.has(w)}
-      onChange={(e)=>{
-        const n = new Set(tempWeapons);
-        e.target.checked ? n.add(w) : n.delete(w);
-        setTempWeapons(n);
-      }}
-    />
-    <span>{w}</span>
-  </label>
-))}
+    {/* 무기 픽커 */}
+{showWeaponPicker && (
+  <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+    <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:380, maxWidth:520, width:"90%" }}>
+      <h4 style={{ marginTop:0 }}>{T.weapons}</h4>
 
-            </div>
-            <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
-              <button style={btnSecondary} onClick={()=>setShowWeaponPicker(false)}>{T.cancel}</button>
-              <button style={btn} onClick={()=>{ setWeaponsKO(Array.from(tempWeapons)); setShowWeaponPicker(false); }}>{T.apply}</button>
-            </div>
-          </div>
+      {/* 툴바 */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <div style={{ fontSize:12, color:"#6b7280" }}>선택: {tempWeapons.size} / 2</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button style={btnSecondary} onClick={()=>setTempWeapons(new Set())}>전부 해제</button>
         </div>
-      )}
+      </div>
+
+      {/* 목록 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
+        {ALL_WEAPONS_KO_LIST.map((w)=>(
+          <label key={w} style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <input
+              type="checkbox"
+              checked={tempWeapons.has(w)}
+              onChange={(e)=>{
+                const n = new Set(tempWeapons);
+                if (e.target.checked) {
+                  // 무기는 최대 2개만 허용
+                  if (n.size >= 2) return;
+                  n.add(w);
+                } else {
+                  n.delete(w);
+                }
+                setTempWeapons(n);
+              }}
+            />
+            <span>{w}</span>
+          </label>
+        ))}
+      </div>
+
+      {/* 액션 */}
+      <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
+        <button style={btnSecondary} onClick={()=>setShowWeaponPicker(false)}>{T.cancel}</button>
+        <button
+          style={btn}
+          onClick={()=>{
+            // 최종 적용(선택 0~2개 허용)
+            setWeaponsKO(Array.from(tempWeapons));
+            setShowWeaponPicker(false);
+          }}
+        >
+          {T.apply}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* 기술 픽커 */}
-      {showSkillPicker && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:360 }}>
-            <h4 style={{ marginTop:0 }}>{T.skills}</h4>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
-              {allSkills.map(s=>(
-                <label key={s} style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <input type="checkbox" checked={tempSkills.has(s)} onChange={(e)=>{
-                    const n=new Set(tempSkills); e.target.checked?n.add(s):n.delete(s); setTempSkills(n);
-                  }}/>
-                  <span>{skillLabel(s)}</span>
-                </label>
-              ))}
-            </div>
-            <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
-              <button style={btnSecondary} onClick={()=>setShowSkillPicker(false)}>{T.cancel}</button>
-              <button style={btn} onClick={()=>{ setSkills(Array.from(tempSkills)); setShowSkillPicker(false); }}>{T.apply}</button>
-            </div>
-          </div>
+   {/* 기술 픽커 */}
+{showSkillPicker && (
+  <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+    <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:380, maxWidth:520, width:"90%" }}>
+      <h4 style={{ marginTop:0 }}>{T.skills}</h4>
+
+      {/* 툴바 */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <div style={{ fontSize:12, color:"#6b7280" }}>선택: {tempSkills.size}</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button style={btnSecondary} onClick={()=>setTempSkills(new Set())}>전부 해제</button>
+          <button
+            style={btnSecondary}
+            onClick={()=>{
+              const all = new Set(allSkills);
+              setTempSkills(all);
+            }}
+          >
+            전부 선택
+          </button>
         </div>
-      )}
+      </div>
+
+      {/* 목록 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
+        {allSkills.map((s)=>(
+          <label key={s} style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <input
+              type="checkbox"
+              checked={tempSkills.has(s)}
+              onChange={(e)=>{
+                const n = new Set(tempSkills);
+                e.target.checked ? n.add(s) : n.delete(s);
+                setTempSkills(n);
+              }}
+            />
+            <span>{skillLabel(s)}</span>
+          </label>
+        ))}
+      </div>
+
+      {/* 액션 */}
+      <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
+        <button style={btnSecondary} onClick={()=>setShowSkillPicker(false)}>{T.cancel}</button>
+        <button
+          style={btn}
+          onClick={()=>{
+            setSkills(Array.from(tempSkills));
+            setShowSkillPicker(false);
+          }}
+        >
+          {T.apply}
+        </button>
+      </div>
     </div>
-  );
-}
+  </div>
+)}
+
 
