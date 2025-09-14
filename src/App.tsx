@@ -323,7 +323,7 @@ const SUBCLASS_EXTRA_WEAPONS: Record<string,string[]> = {
   "위저드:칼날 노래": ["단검","장검","레이피어","협도","소검","낫"],
 };
 // ====== 주문 풀(요약) : 패치8 포함 ======
-const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 근력","망자의 종소리"];
+const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"];
 const LV2_PATCH8 = ["그림자 검"];
 
 // ====== 클래스별 주문 목록 ======
