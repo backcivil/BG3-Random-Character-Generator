@@ -89,7 +89,6 @@ onlyBodyType: "신체유형만",
     langBtn: "English",
     str: "힘", dex: "민첩", con: "건강", int: "지능", wis: "지혜", cha: "매력",
     diceTitle: "주사위 굴리기",
-    dicePH: "예: 1d4, 3d6+2",
     rollDice: "굴리기",
     vsTitle: "승자 정하기",
     vsPH: "공백 또는 쉼표로 구분 (예: 레이첼 카룰루크 세도하트 아스타로트)",
@@ -136,7 +135,6 @@ onlyBodyType: "Body Type Only",
     langBtn: "한국어",
     str: "STR", dex: "DEX", con: "CON", int: "INT", wis: "WIS", cha: "CHA",
     diceTitle: "Dice Roller",
-    dicePH: "e.g., 1d4, 3d6+2",
     rollDice: "Roll",
     vsTitle: "Decide Winner",
     vsPH: "Whitespace or commas",
@@ -2051,7 +2049,7 @@ function excludeFeatItem(detailLine: string){
     </div>
   ))}
 </div>
-
+</div> 
 </section>
 
 
