@@ -1168,27 +1168,33 @@ function rollWeaponsBtn() {
   setWeaponsKO(next);
 }
 
+// App() 내부: 기존 rollSkillsBtn 교체
 function rollSkillsBtn() {
   if (lockSkills) return; // 전체 잠금이면 변경 금지
 
   const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-  const targetN = CLASS_SK_CHOICE[classKoLabel]?.n ?? 2; // 클래스별 정확한 개수
 
-  // 클래스/출신 기반 추천(출신 2개는 이미 제외)
+  // 1) 클래스별 "정확한 목표 개수" 계산
+  const targetN = CLASS_SK_CHOICE[classKoLabel]?.n ?? 2;
+
+  // 2) 현재 잠금된 스킬을 "현재 표시 순서" 기준으로 정렬 후 상한까지만 유지
+  //    (잠금을 3~4개 해도 해당 클래스가 허용하는 개수까지만 유지)
+  const lockedOrdered = skills.filter(s => lockSkillSet.has(s)).slice(0, targetN);
+
+  // 3) 클래스/출신 기반 추천(출신 2개는 computeClassSkills에서 이미 제외됨)
   const base = computeClassSkills(classKoLabel, bg);
 
-  //  잠금된 스킬이 많아도 클래스 허용 개수로 컷
-  const lockedTrimmed = Array.from(lockSkillSet).slice(0, targetN);
+  // 4) 중복 제거
+  const pool = base.filter(s => !lockedOrdered.includes(s));
+  const fallback = (Object.keys(SK.KO) as SkillKey[]).filter(s => !lockedOrdered.includes(s));
 
-  // 중복 방지
-  const pool = base.filter(s => !lockedTrimmed.includes(s));
-  const fallback = (Object.keys(SK.KO) as SkillKey[])
-    .filter(s => !lockedTrimmed.includes(s));
+  // 5) 병합 + 정확히 targetN개로 고정
+  const next = mergeLocked(lockedOrdered, pool, targetN, fallback) as SkillKey[];
 
-  // 병합(= 잠금 유지 + 남는 칸 채우기) — 결과는 정확히 targetN개
-  const next = mergeLocked(lockedTrimmed, pool, targetN, fallback) as SkillKey[];
-  setSkills(next);
+  // (최후 안전장치) 혹시라도 많아지면 자르기
+  setSkills(next.slice(0, targetN));
 }
+
 
 
  function rollBodyTypeBtn() {
