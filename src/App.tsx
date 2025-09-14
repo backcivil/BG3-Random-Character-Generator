@@ -2047,7 +2047,7 @@ function excludeFeatItem(detailLine: string){
     </div>
   ))}
 </div>
-
+</div>
 </section>
 
 
