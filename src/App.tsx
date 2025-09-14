@@ -914,29 +914,86 @@ function suggestGrowth(params: {
   const out: string[] = [];
   const already = new Set<string>(); // 같은 레벨 한 번의 추천에서 중복 방지
 
-  // Fighter
-  if (klass==="Fighter") {
-    if (level===1) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-   // 전투의 대가: 3레벨 3개, 7/10레벨 각 2개
-if (sub==="전투의 대가") {
-  const cnt = level===3 ? 3 : (level===7 || level===10 ? 2 : 0);
-  if (cnt > 0) {
-    const picks = pickUnique(BM_MANEUVERS.filter(x=>!exclude.has(x)), cnt, already);
-    for (const m of picks) out.push(`전투 기법: ${m}`);
+ // Fighter
+if (klass === "Fighter") {
+  if (level === 1) {
+    out.push(
+      `전투 방식: ${choice(
+        ["궁술", "방어술", "결투술", "대형 무기 전투", "엄호술", "쌍수 전투"].filter(
+          (x) => !exclude.has(x)
+        )
+      )}`
+    );
   }
-}
 
-    if (sub==="투사" && level===10) out.push(`전투 방식: ${choice(["궁술","방어술","결투술","대형 무기 전투","엄호술","쌍수 전투"].filter(x=>!exclude.has(x)))}`);
-    if (sub==="비전 궁수") {
-      if (level===3) {
-        out.push(`주문: ${choice(["인도","빛","진실의 일격"].filter(x=>!exclude.has(x)))}`);
-        out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-        out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-        out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
-      }
-      if (level===7 || level===10) out.push(`비전 사격: ${choice(ELDRITCH_SHOTS.filter(x=>!exclude.has(x)))}`);
+  // 전투의 대가: 3레벨 3개, 7/10레벨 각 2개
+  if (sub === "전투의 대가") {
+    const cnt = level === 3 ? 3 : level === 7 || level === 10 ? 2 : 0;
+    if (cnt > 0) {
+      const picks = pickUnique(
+        BM_MANEUVERS.filter((x) => !exclude.has(x)),
+        cnt,
+        already
+      );
+      for (const m of picks) out.push(`전투 기법: ${m}`);
     }
   }
+
+  // 투사: 10레벨에 전투 방식 추가
+  if (sub === "투사" && level === 10) {
+    out.push(
+      `전투 방식: ${choice(
+        ["궁술", "방어술", "결투술", "대형 무기 전투", "엄호술", "쌍수 전투"].filter(
+          (x) => !exclude.has(x)
+        )
+      )}`
+    );
+  }
+
+  // 비전 궁수: 비전 사격 습득 + (4레벨부터) 매 레벨 '1개 교체' 제안
+  if (sub === "비전 궁수") {
+    // 3레벨: 소마법 1개 + 비전 사격 3개(중복 없이)
+    if (level === 3) {
+      const cantrips = ["인도", "빛", "진실의 일격"].filter((x) => !exclude.has(x));
+      if (cantrips.length) out.push(`주문: ${choice(cantrips)}`);
+
+      const shots3 = pickUnique(
+        ELDRITCH_SHOTS.filter((x) => !exclude.has(x)),
+        3,
+        already
+      );
+      for (const s of shots3) out.push(`비전 사격: ${s}`);
+    }
+
+    // 7 / 10레벨: 비전 사격 1개 추가
+    if (level === 7 || level === 10) {
+      const add = pickUnique(
+        ELDRITCH_SHOTS.filter((x) => !exclude.has(x)),
+        1,
+        already
+      );
+      if (add[0]) out.push(`비전 사격: ${add[0]}`);
+    }
+
+    // ★ 4레벨부터: 매 레벨 '비전 사격 교체' 1회 제안
+    if (level >= 4) {
+      // 현재 레벨에서 '알고 있는' 총 비전 사격 수 추정
+      // (3레벨: 3개, 7레벨: +1 => 4개, 10레벨: +1 => 5개)
+      const knownShots =
+        level < 7 ? 3 : level < 10 ? 4 : 5;
+
+      const repPool = ELDRITCH_SHOTS.filter(
+        (s) => !exclude.has(s) && !already.has(s)
+      );
+      if (repPool.length > 0) {
+        const rep = choice(repPool);
+        already.add(rep);
+        const roll = rand(knownShots) + 1; // 1..knownShots
+        out.push(`비전 사격 교체: 기존 ${roll}번째 옵션 제거 → 추가: ${rep}`);
+      }
+    }
+  }
+}
 
   // Barbarian — 야생의 심장: 3~12 계속 교체 가능
   if (klass==="Barbarian" && sub==="야생의 심장" && level>=3) {
