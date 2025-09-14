@@ -497,24 +497,23 @@ function computeWeapons(raceKoLabel: string, classKoLabel: string, subclass?: st
   return shuffle(pool).slice(0, Math.min(pickN, pool.length));
 }
 function computeClassSkills(classKo: string, bgSel: Background): SkillKey[] {
-  const cfg = CLASS_SK_CHOICE[classKo];
-  if (!cfg) return [];
-  const n = cfg.n;
-
-  // 클래스 기본 후보
-  const baseList = cfg.list;
-
-  // 배경 스킬 2개 제외(배경이 "-"면 제외 없음)
-  let filtered: SkillKey[];
-  if (bgSel === "-") {
-    filtered = baseList;
-  } else {
+  // 바드는 모든 기술에서 3개
+  if (classKo === "바드") {
+    const all = Object.keys(SK.KO) as SkillKey[];
+    if (bgSel === "-") return sampleN(all, 3);
     const [bg1, bg2] = BG_SKILLS[bgSel];
-    filtered = baseList.filter(s => s !== bg1 && s !== bg2);
+    const pool = all.filter(s => s !== bg1 && s !== bg2);
+    return sampleN(pool, 3);
   }
 
-  return sampleN(filtered, n);
+  const cfg = CLASS_SK_CHOICE[classKo];
+  if (!cfg) return [];
+
+  const [bg1, bg2] = bgSel === "-" ? [null, null] as any : BG_SKILLS[bgSel];
+  const pool = cfg.list.filter((s) => s !== bg1 && s !== bg2);
+  return sampleN(pool, cfg.n);
 }
+
 
 function bgLabel(bg: Background, lang: Lang="ko") {
   if (bg === "-") return "-";
@@ -1091,6 +1090,8 @@ useEffect(() => {
   const [showSkillPicker, setShowSkillPicker] = useState(false);
   const [tempWeapons, setTempWeapons] = useState<Set<string>>(new Set());
   const [tempSkills, setTempSkills] = useState<Set<SkillKey>>(new Set());
+const [showDebug, setShowDebug] = useState(false);
+const [debugInfo, setDebugInfo] = useState<{ skills?: any; weapons?: any }>({});
 
   // Dice
   const [diceExpr, setDiceExpr] = useState<string>("1d20");
@@ -1186,35 +1187,61 @@ function rollSkillsBtn() {
   if (lockSkills) return; // 전체 잠금
 
   const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
-  const cfg = CLASS_SK_CHOICE[classKoLabel];
 
-  // 클래스가 없거나 스킬 없는 클래스면 종료
-  if (!cfg) { setSkills([]); return; }
+  // 규칙상 선택 개수 n 구하기 (바드=3, 나머지는 테이블)
+  const n = classKoLabel === "바드"
+    ? 3
+    : (CLASS_SK_CHOICE[classKoLabel]?.n ?? 0);
 
-  const targetN = cfg.n;
+  // 클래스/출신 기반 추천 '기본 뽑기' (이미 BG 제거/랜덤 적용됨)
+  const basePick = computeClassSkills(classKoLabel, bg);
 
-  // 배경 제외를 반영한 "클래스 전체 후보"
-  let classAll: SkillKey[] = cfg.list;
-  if (bg !== "-") {
-    const [bg1, bg2] = BG_SKILLS[bg];
-    classAll = classAll.filter(s => s !== bg1 && s !== bg2);
+  // 디버그용 중간 풀
+  const classList =
+    classKoLabel === "바드"
+      ? (Object.keys(SK.KO) as SkillKey[])
+      : (CLASS_SK_CHOICE[classKoLabel]?.list || []);
+
+  const bgSkills = bg === "-" ? null : BG_SKILLS[bg];
+  const filtered = bgSkills
+    ? classList.filter((s) => s !== bgSkills[0] && s !== bgSkills[1])
+    : classList.slice();
+
+  // 병합 로직: 잠금 우선, 그 다음 basePick으로 채우고, 모자라면(정말 예외) 전체에서 채움
+  const locked = Array.from(lockSkillSet);
+  let desired = Math.max(locked.length, n); // 잠금이 n보다 많으면 그 개수까지만 유지
+
+  const poolFromBase = basePick.filter((s) => !lockSkillSet.has(s));
+  const fallback = (Object.keys(SK.KO) as SkillKey[]).filter((s) => !lockSkillSet.has(s));
+
+  let next = mergeLocked(locked, poolFromBase, desired, fallback);
+
+  // 최종 개수 강제: 잠금이 n 이하면 정확히 n개로 자르기, 잠금이 n보다 많으면 잠금만 유지
+  if (lockSkillSet.size <= n) {
+    next = next.slice(0, n);
+  } else {
+    next = locked; // 규칙상 초과분은 잠금만 존중하고 추가 보충 금지
   }
 
-  // 현재 잠금된 스킬들(보이는 순서대로)에서 목표 개수만 유지
-  const lockedOrdered = skills.filter(s => lockSkillSet.has(s)).slice(0, targetN);
+  setSkills(next);
 
-  // 기본 추천(클래스/배경 반영 랜덤)
-  const base = computeClassSkills(classKoLabel, bg);
-
-  // 중복 제거
-  const pool = base.filter(s => !lockedOrdered.includes(s));
-  const fallback = classAll.filter(s => !lockedOrdered.includes(s) && !pool.includes(s));
-
-  // 병합 후 정확히 targetN개로 컷
-  const next = mergeLocked(lockedOrdered, pool, targetN, fallback) as SkillKey[];
-  setSkills(next.slice(0, targetN));
+  // ===== 디버그 저장 =====
+  setDebugInfo((prev) => ({
+    ...(prev || {}),
+    skills: {
+      classKo: classKoLabel,
+      n,
+      bg,
+      bgSkills: bgSkills ? [bgSkills[0], bgSkills[1]] : null,
+      classList,
+      filteredAfterBG: filtered,
+      basePick,
+      lockSize: lockSkillSet.size,
+      desiredAfterLock: desired,
+      final: next,
+    },
+  }));
 }
-
 
 
 
@@ -1915,6 +1942,34 @@ function excludeFeatItem(detailLine: string){
                 )}
               </div>
             </section>
+{/* 디버그 */}
+<section style={{ border:"1px solid #fecaca", borderRadius:12, padding:16 }}>
+  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+    <h3 style={{ fontSize:16, fontWeight:800, margin:0, color:"#991b1b" }}>디버그 (Skills)</h3>
+    <button style={btnSecondary} onClick={()=>setShowDebug(s=>!s)}>
+      {showDebug ? "숨기기" : "보기"}
+    </button>
+  </div>
+
+  {showDebug && debugInfo.skills && (
+    <div style={{ marginTop:10, fontFamily:"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize:12, lineHeight:1.4 }}>
+      <div>클래스(KO): <b>{debugInfo.skills.classKo}</b>, 규칙 n=<b>{debugInfo.skills.n}</b></div>
+      <div>출신: <b>{String(debugInfo.skills.bg)}</b>
+        {debugInfo.skills.bgSkills && <> / BG기술: [{debugInfo.skills.bgSkills[0]}, {debugInfo.skills.bgSkills[1]}]</>}
+      </div>
+      <hr />
+      <div>클래스 원본 풀: [{debugInfo.skills.classList.join(", ")}]</div>
+      <div>BG 제거 후 풀: [{debugInfo.skills.filteredAfterBG.join(", ")}]</div>
+      <div>기본 뽑기(basePick): [{debugInfo.skills.basePick.join(", ")}]</div>
+      <div>잠금 개수: {debugInfo.skills.lockSize}, 잠금 반영 목표 개수: {debugInfo.skills.desiredAfterLock}</div>
+      <div style={{ marginTop:6, color:"#065f46" }}>
+        최종 결과(final): <b>[{debugInfo.skills.final.join(", ")}]</b>
+      </div>
+    </div>
+  )}
+</section>
+
+            
           </div>
         </div>
       </div>
