@@ -2000,18 +2000,7 @@ function excludeFeatItem(detailLine: string){
     </div>
 {/* 능력치 & 보너스(행별 배정) */}
 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-  {/* (+2 / +1) 글로벌 고정 스위치 */}
-<div style={{ display:"flex", justifyContent:"flex-end", gap:12, marginTop:4 }}>
-  <label style={{ display:"flex", alignItems:"center", gap:6 }}>
-    <span>+2 {L[lang].locks}</span>
-    <input type="checkbox" checked={lockPb2} onChange={(e)=>setLockPb2(e.target.checked)} />
-  </label>
-  <label style={{ display:"flex", alignItems:"center", gap:6 }}>
-    <span>+1 {L[lang].locks}</span>
-    <input type="checkbox" checked={lockPb1} onChange={(e)=>setLockPb1(e.target.checked)} />
-  </label>
-</div>
-
+  
   {/* 헤더 줄 */}
   <div
     style={{
