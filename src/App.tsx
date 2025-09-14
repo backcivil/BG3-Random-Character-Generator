@@ -1115,6 +1115,9 @@ const [lockSkillSet, setLockSkillSet] = useState<Set<SkillKey>>(new Set());
 const [lockStat, setLockStat] = useState<Record<Abil, boolean>>({
   STR:false, DEX:false, CON:false, INT:false, WIS:false, CHA:false,
 });
+// +2 / +1 보너스 잠금
+const [lockPb2, setLockPb2] = useState(false);
+const [lockPb1, setLockPb1] = useState(false);
 
     // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
     const [bodyType, setBodyType] = useState<BodyType | null>(null);
@@ -1209,9 +1212,33 @@ function rollClass() {
  function rollBackground() { if (!lockBackground) setBg(choice(BACK_KO)); }
 
   function rollStatsBtn() {
-    const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
-    setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
+  const { base, bonus2, bonus1 } = rollPointBuyWithBonuses();
+
+  // 잠금이 있으면 기존 선택 유지, 없으면 새 랜덤 사용
+  const b2 = (lockPb2 && pbBonus2) ? pbBonus2 : bonus2;
+  let   b1 = (lockPb1 && pbBonus1) ? pbBonus1 : bonus1;
+
+  // 둘 다 잠금이 아니고, 우연히 같은 능력치가 걸리면 겹치지 않도록 조정
+  if (!(lockPb1 && pbBonus1) && !(lockPb2 && pbBonus2) && b1 === b2) {
+    const alts = ABILS.filter(a => a !== b2);
+    b1 = alts[rand(alts.length)];
   }
+
+  const final = { ...base };
+  if (b2) final[b2] = Math.min(17, final[b2] + 2);
+  if (b1) final[b1] = Math.min(17, final[b1] + 1);
+
+  setPbBonus2(b2 ?? null);
+  setPbBonus1(b1 ?? null);
+
+  // 개별 능력치 잠금(lockStat)은 그대로 존중
+  setStats(prev => {
+    const next = { ...prev };
+    for (const a of ABILS) if (!lockStat[a]) next[a] = final[a];
+    return next;
+  });
+}
+
 function rollWeaponsBtn(overrides?: {
   raceKey?: keyof typeof RACES | "-";
   classKey?: keyof typeof CLASSES | "-";
@@ -1354,14 +1381,30 @@ function rollAll() {
   // 3) 출신
   if (!lockBackground) setBg(choice(BACK_KO));
 
-  // 4) 능력치
-  const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
-  setPbBonus2(bonus2); setPbBonus1(bonus1);
+ // 4) 능력치
+{
+  const { base, bonus2, bonus1 } = rollPointBuyWithBonuses();
+
+  const b2 = (lockPb2 && pbBonus2) ? pbBonus2 : bonus2;
+  let   b1 = (lockPb1 && pbBonus1) ? pbBonus1 : bonus1;
+  if (!(lockPb1 && pbBonus1) && !(lockPb2 && pbBonus2) && b1 === b2) {
+    const alts = ABILS.filter(a => a !== b2);
+    b1 = alts[rand(alts.length)];
+  }
+
+  const final = { ...base };
+  if (b2) final[b2] = Math.min(17, final[b2] + 2);
+  if (b1) final[b1] = Math.min(17, final[b1] + 1);
+
+  setPbBonus2(b2 ?? null);
+  setPbBonus1(b1 ?? null);
   setStats(prev => {
     const next = { ...prev };
     for (const a of ABILS) if (!lockStat[a]) next[a] = final[a];
     return next;
   });
+}
+
 
   // 5) 신앙(클레릭일 때만)
   if (k === "Cleric") {
@@ -1413,6 +1456,27 @@ function handleChangePb1(v: string){
     const r = uniqueRolls(parts);
     setVsLines(r.lines); setVsWinner(r.winner);
   }
+// +2, +1 보너스 수동 변경 핸들러 (handleVersus 아래, 성장 추천 섹션 위)
+function handleChangePb2(v: string){
+  const nxt = (v==="" ? null : (v as Abil));
+  setStats(prev=>{
+    const s = { ...prev };
+    if (pbBonus2) s[pbBonus2] = Math.max(1, s[pbBonus2] - 2);
+    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 2);
+    return s;
+  });
+  setPbBonus2(nxt);
+}
+function handleChangePb1(v: string){
+  const nxt = (v==="" ? null : (v as Abil));
+  setStats(prev=>{
+    const s = { ...prev };
+    if (pbBonus1) s[pbBonus1] = Math.max(1, s[pbBonus1] - 1);
+    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 1);
+    return s;
+  });
+  setPbBonus1(nxt);
+}
 
   /** ===== 성장 추천 ===== */
   function doSuggestGrowth() {
@@ -1897,6 +1961,42 @@ function excludeFeatItem(detailLine: string){
         <input type="checkbox" checked={lockBodyType} onChange={e=>setLockBodyType(e.target.checked)}/>
       </label>
     </div>
+{/* 능력치 보너스(+2 / +1) */}
+<div style={{ ...row, marginTop:8 }}>
+  <label style={label}>+2 / +1</label>
+
+  {/* +2 선택 */}
+  <select
+    value={pbBonus2 ?? ""}
+    onChange={(e:any)=>handleChangePb2(e.target.value)}
+    style={{...select, minWidth:140, maxWidth:160}}
+    disabled={lockPb2}
+    title={lockPb2 ? "고정되어 있음" : ""}
+  >
+    <option value="">+2 -</option>
+    {ABILS.map(a => <option key={a} value={a}>{abilLabel(a)}</option>)}
+  </select>
+  <label style={{display:"flex", alignItems:"center", gap:6}}>
+    <input type="checkbox" checked={lockPb2} onChange={(e)=>setLockPb2(e.target.checked)} />
+    <span>{L[lang].locks}</span>
+  </label>
+
+  {/* +1 선택 */}
+  <select
+    value={pbBonus1 ?? ""}
+    onChange={(e:any)=>handleChangePb1(e.target.value)}
+    style={{...select, minWidth:140, maxWidth:160}}
+    disabled={lockPb1}
+    title={lockPb1 ? "고정되어 있음" : ""}
+  >
+    <option value="">+1 -</option>
+    {ABILS.map(a => <option key={a} value={a}>{abilLabel(a)}</option>)}
+  </select>
+  <label style={{display:"flex", alignItems:"center", gap:6}}>
+    <input type="checkbox" checked={lockPb1} onChange={(e)=>setLockPb1(e.target.checked)} />
+    <span>{L[lang].locks}</span>
+  </label>
+</div>
 
     {/* 능력치: 값 설정 + 개별 고정 + 보너스 대상 선택 */}
     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
