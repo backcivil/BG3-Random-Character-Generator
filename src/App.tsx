@@ -1456,27 +1456,6 @@ function handleChangePb1(v: string){
     const r = uniqueRolls(parts);
     setVsLines(r.lines); setVsWinner(r.winner);
   }
-// +2, +1 보너스 수동 변경 핸들러 (handleVersus 아래, 성장 추천 섹션 위)
-function handleChangePb2(v: string){
-  const nxt = (v==="" ? null : (v as Abil));
-  setStats(prev=>{
-    const s = { ...prev };
-    if (pbBonus2) s[pbBonus2] = Math.max(1, s[pbBonus2] - 2);
-    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 2);
-    return s;
-  });
-  setPbBonus2(nxt);
-}
-function handleChangePb1(v: string){
-  const nxt = (v==="" ? null : (v as Abil));
-  setStats(prev=>{
-    const s = { ...prev };
-    if (pbBonus1) s[pbBonus1] = Math.max(1, s[pbBonus1] - 1);
-    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 1);
-    return s;
-  });
-  setPbBonus1(nxt);
-}
 
   /** ===== 성장 추천 ===== */
   function doSuggestGrowth() {
