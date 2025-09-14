@@ -31,6 +31,7 @@ function pickUnique<T>(pool: readonly T[], n: number, already: Set<T>): T[] {
 }
 
 type Lang = "ko" | "en";
+type BodyType = 1 | 2 | 3 | 4;
 
 /** ========= 다국어 ========= */
 const L = {
@@ -43,6 +44,8 @@ const L = {
     background: "출신",
     weapons: "무기",
     skills: "기술",
+bodyType: "신체유형",
+onlyBodyType: "신체유형만",
     abilities: "능력치",
     rollAll: "전체 랜덤",
     onlyRace: "종족만",
@@ -88,6 +91,9 @@ const L = {
     weapons: "Weapons",
     skills: "Skills",
     abilities: "Abilities",
+bodyType: "Body Type",
+onlyBodyType: "Body Type Only",
+
     rollAll: "Roll All",
     onlyRace: "Race Only",
     onlyClass: "Class Only",
@@ -171,6 +177,26 @@ function randomDeity(raceKey: keyof typeof RACES | "-", subraceKo: string): stri
   if (raceKey === "Githyanki") pool.push("블라키스"); // 기스양키면 추가
   if (subraceKo === "드웨가") pool.push("라더궈");     // 드웨가면 추가
   return choice(pool);
+}
+/** ========= 신체유형 ========= */
+const BODYTYPE_12_ONLY = new Set<keyof typeof RACES>([
+  "Githyanki","Dwarf","Halfling","Gnome","Dragonborn","Half-Orc"
+]);
+function allowedBodyTypes(r: keyof typeof RACES | "-"): BodyType[] {
+  if (r === "-") return [1, 2, 3, 4];
+  return BODYTYPE_12_ONLY.has(r) ? [1, 2] : [1, 2, 3, 4];
+}
+function bodyTypeLabel(bt: BodyType, lang: Lang = "ko"): string {
+  if (lang === "en") {
+    return bt===1 ? "1 (Female)" :
+           bt===2 ? "2 (Male)" :
+           bt===3 ? "3 (Large Female)" :
+                    "4 (Large Male)";
+  }
+  return bt===1 ? "1(여성)" :
+         bt===2 ? "2(남성)" :
+         bt===3 ? "3(큰 여성)" :
+                  "4(큰 남성)";
 }
 
 /** ========= 배경/스킬 ========= */
@@ -971,6 +997,8 @@ export default function App() {
   const [weaponsKO, setWeaponsKO] = useState<string[]>([]);
   const [skills, setSkills] = useState<SkillKey[]>([]);
     // 최신 상태로 무기 재계산 (종족/클래스/서브클래스 바뀔 때)
+    const [bodyType, setBodyType] = useState<BodyType | null>(null);
+
 useEffect(() => {
   rollWeaponsBtn();
 }, [raceKey, classKey, subclassKo]);
@@ -979,6 +1007,13 @@ useEffect(() => {
 useEffect(() => {
   rollSkillsBtn();
 }, [classKey, bg]);
+useEffect(() => {
+  const allowed = allowedBodyTypes(raceKey);
+  if (bodyType && !allowed.includes(bodyType)) {
+    setBodyType(choice(allowed));
+  }
+  // bodyType이 비어있으면 그대로 둡니다(사용자가 직접 굴릴 수 있음)
+}, [raceKey]);
 
 
   // 재주
@@ -1067,6 +1102,11 @@ useEffect(() => {
     const picks = computeClassSkills(classKoLabel, bg);
     setSkills(picks);
   }
+    function rollBodyTypeBtn() {
+  const allowed = allowedBodyTypes(raceKey);
+  setBodyType(choice(allowed));
+}
+
  function rollAll() {
   // 1) 종족
   const raceKeys = Object.keys(RACES) as (keyof typeof RACES)[];
@@ -1093,6 +1133,10 @@ useEffect(() => {
   // 5) 신앙 (클레릭일 때만, 종족/서브종족 조건 반영)
   if (k === "Cleric") setDeityKo(randomDeity(r, sr));
   else setDeityKo("-");
+  // 6) 신체유형
+  setBodyType(choice(allowedBodyTypes(r)));
+
+
 }
 
 
@@ -1255,6 +1299,10 @@ function excludeFeatItem(detailLine: string){
 
                 <div style={{ color:"#6b7280" }}>{T.skills}</div>
                 <div>{skills.map(skillLabel).join(", ")}</div>
+
+                <div style={{ color:"#6b7280" }}>{T.bodyType}</div>
+<div>{bodyType ? bodyTypeLabel(bodyType, lang) : ""}</div>
+
               </div>
 
               {/* 능력치 */}
@@ -1284,6 +1332,8 @@ function excludeFeatItem(detailLine: string){
                 <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
                 <button onClick={rollAny2Weapons} style={btn}>{T.any2Weapons}</button>
                 <button onClick={rollSkillsBtn} style={btn}>{T.rollSkills}</button>
+                <button onClick={rollBodyTypeBtn} style={btn}>{T.onlyBodyType}</button>
+
               </div>
             </section>
 
