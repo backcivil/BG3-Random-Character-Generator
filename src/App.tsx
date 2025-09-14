@@ -2004,14 +2004,19 @@ function excludeFeatItem(detailLine: string){
       {/* 숫자 입력: 숫자만 네모, 최대 15 */}
       <input
         type="number"
-        min={1}
+        min={8}
         max={15}  // 입력 상한 15
         value={stats[a]}
         onChange={(e) => {
           const v = Math.max(1, Math.min(15, parseInt(e.target.value || "1", 10)));
           setStats((prev) => ({ ...prev, [a]: v }));
         }}
-        style={{ ...input, width:110 }}
+       <input
+  type="number"
+  ...
+  style={{ ...input, minWidth:0, width:110, boxSizing:"border-box" }}
+/>
+
       />
 
       {/* 개별 고정: 체크박스만 */}
