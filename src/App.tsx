@@ -253,20 +253,24 @@ const BG_SKILLS: Record<Exclude<Background,"-">,[SkillKey,SkillKey]> = {
 };
 
 // 클래스 기본 기술 선택풀
+// 클래스 기본 기술 선택풀
 const CLASS_SK_CHOICE: Record<string, { n: number; list: SkillKey[] }> = {
-  바바리안:{n:2, list:["Animal","Athletics","Intimidation","Nature","Perception","Survival"]},
-  바드:{n:3, list:["Deception","Performance","Persuasion","Sleight","Intimidation","Acrobatics","Insight"]},
-  클레릭:{n:2, list:["History","Insight","Medicine","Persuasion","Religion"]},
-  드루이드:{n:2, list:["Animal","Insight","Medicine","Nature","Perception","Survival"]},
-  파이터:{n:2, list:["Acrobatics","Animal","Athletics","History","Insight","Intimidation","Perception","Survival"]},
-  몽크:{n:2, list:["Acrobatics","Athletics","Insight","History","Religion","Stealth"]},
-  팔라딘:{n:2, list:["Athletics","Insight","Intimidation","Medicine","Persuasion","Religion"]},
-  레인저:{n:3, list:["Animal","Athletics","Insight","Investigation","Nature","Perception","Stealth","Survival"] as any},
-  로그:{n:4, list:["Acrobatics","Athletics","Deception","Insight","Intimidation","Investigation","Perception","Performance","Persuasion","Sleight","Stealth"] as any},
-  소서러:{n:2, list:["Arcana","Deception","Insight","Intimidation","Persuasion","Religion"]},
-  워락:{n:2, list:["Arcana","Deception","History","Intimidation","Investigation","Nature","Religion"] as any},
-  위저드:{n:2, list:["Arcana","History","Insight","Investigation","Medicine","Religion"] as any},
+  바바리안: { n: 2, list: ["Animal","Athletics","Intimidation","Nature","Perception","Survival"] },
+
+  // 바드: 모든 기술 중 택3
+  바드: { n: 3, list: Object.keys(SK.KO) as SkillKey[] },
+  클레릭: { n: 2, list: ["History","Insight","Medicine","Persuasion","Religion"] },
+  드루이드: { n: 2, list: ["Arcana","Nature","Religion","Animal","Insight","Medicine","Perception","Survival"] },
+  파이터: { n: 2, list: ["Acrobatics","Animal","Athletics","History","Insight","Intimidation","Perception","Survival"] },
+  몽크:   { n: 2, list: ["Acrobatics","Athletics","Insight","History","Religion","Stealth"] },
+  팔라딘: { n: 2, list: ["Athletics","Insight","Intimidation","Medicine","Persuasion","Religion"] },
+  레인저: { n: 2, list: ["Athletics","Stealth","Investigation","Nature","Animal","Insight","Perception","Survival"] },
+  로그:   { n: 4, list: ["Acrobatics","Athletics","Deception","Insight","Intimidation","Investigation","Perception","Performance","Persuasion","Sleight","Stealth"] },
+  소서러: { n: 2, list: ["Arcana","Deception","Insight","Intimidation","Persuasion","Religion"] },
+  워락:   { n: 2, list: ["Arcana","Deception","History","Intimidation","Investigation","Nature","Religion"] },
+  위저드: { n: 2, list: ["Arcana","History","Insight","Investigation","Medicine","Religion"] },
 };
+
 
 /** ========= 무기 ========= */
 const SIMPLE = ["Club","Dagger","Greatclub","Handaxe","Javelin","Light Crossbow","Light Hammer","Mace","Quarterstaff","Shortbow","Sickle","Spear"] as const;
