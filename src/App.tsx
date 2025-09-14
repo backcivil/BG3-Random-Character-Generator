@@ -561,8 +561,6 @@ function maxSpellLevelByClass(klass: string, level: number): number {
       return 6;
     case "Ranger":
       return level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0;
-    case "Ranger":
-      return level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0;
     // ★ Paladin: 5레벨에 2레벨 주문, 9레벨에 3레벨 주문
     case "Paladin":
       return level >= 9 ? 3 : level >= 5 ? 2 : 1;
@@ -1183,15 +1181,7 @@ function rollWeaponsBtn() {
   setWeaponsKO(next);
 }
 
-
-  const picks = computeWeapons(
-    raceKoLabel,
-    classKoLabel,
-    subclassKo !== "-" ? subclassKo : undefined
-  );
-  setWeaponsKO(picks);
-}
-
+  
 
  function rollAny2Weapons() {
   if (lockWeapons) return; // 전체 잠금
@@ -1616,8 +1606,6 @@ function excludeFeatItem(detailLine: string){
     }
   </select>
 
-  <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-  <input type="checkbox"/>
 </div>
 
               {/* 출신 (한 줄 정리) */}
@@ -1632,8 +1620,8 @@ function excludeFeatItem(detailLine: string){
 
               </div>
 
-              {/* 무기 선택 */}
-           <div style={row}>
+           {/* 무기 선택 */}
+<div style={row}>
   <label style={label}>{T.weapons}</label>
   <button
     style={btn}
@@ -1645,27 +1633,32 @@ function excludeFeatItem(detailLine: string){
   </button>
   <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
     {weaponsKO.join(", ")}
- <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-  {weaponsKO.map(w => (
-    <label key={w} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
-      <input
-        type="checkbox"
-        checked={lockWeaponSet.has(w)}
-        onChange={(e)=>{
-          const n=new Set(lockWeaponSet);
-          e.target.checked ? n.add(w) : n.delete(w);
-          setLockWeaponSet(n);
-        }}
-      />
-      <span>{w}</span>
-    </label>
-  ))}
+  </div>
 </div>
 
+{/* 무기 개별 잠금 토글(칩) */}
+<div style={{ ...row, marginTop:6 }}>
+  <div style={{ width:72 }} />
+  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+    {weaponsKO.map(w => (
+      <label key={w} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
+        <input
+          type="checkbox"
+          checked={lockWeaponSet.has(w)}
+          onChange={(e)=>{
+            const n=new Set(lockWeaponSet);
+            e.target.checked ? n.add(w) : n.delete(w);
+            setLockWeaponSet(n);
+          }}
+        />
+        <span>{w}</span>
+      </label>
+    ))}
+  </div>
+</div>
 
-
-              {/* 기술 선택 */}
-             <div style={row}>
+         {/* 기술 선택 */}
+<div style={row}>
   <label style={label}>{T.skills}</label>
   <button
     style={btn}
@@ -1677,22 +1670,30 @@ function excludeFeatItem(detailLine: string){
   </button>
   <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
     {skills.map(skillLabel).join(", ")}
- <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-  {skills.map(s => (
-    <label key={s} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
-      <input
-        type="checkbox"
-        checked={lockSkillSet.has(s)}
-        onChange={(e)=>{
-          const n=new Set(lockSkillSet);
-          e.target.checked ? n.add(s) : n.delete(s);
-          setLockSkillSet(n);
-        }}
-      />
-      <span>{skillLabel(s)}</span>
-    </label>
-  ))}
+  </div>
 </div>
+
+{/* 기술 개별 잠금 토글(칩) */}
+<div style={{ ...row, marginTop:6 }}>
+  <div style={{ width:72 }} />
+  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+    {skills.map(s => (
+      <label key={s} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
+        <input
+          type="checkbox"
+          checked={lockSkillSet.has(s)}
+          onChange={(e)=>{
+            const n=new Set(lockSkillSet);
+            e.target.checked ? n.add(s) : n.delete(s);
+            setLockSkillSet(n);
+          }}
+        />
+        <span>{skillLabel(s)}</span>
+      </label>
+    ))}
+  </div>
+</div>
+
 
 //신체유형
 <div style={row}>
