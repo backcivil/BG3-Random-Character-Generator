@@ -1420,7 +1420,7 @@ function togglePb2(a: Abil, checked: boolean) {
     const s = { ...prev };
 
     // 기존 +2 회수
-    if (pbBonus2) s[pbBonus2] = Math.max(1, s[pbBonus2] - 2);
+s[pbBonus2] = Math.max(8, s[pbBonus2] - 2);
 
     let nextPb2: Abil | null = null;
     let nextPb1 = pbBonus1;
@@ -1428,7 +1428,7 @@ function togglePb2(a: Abil, checked: boolean) {
     if (checked) {
       // 같은 능력치에 +1이 걸려 있으면 먼저 해제
       if (pbBonus1 === a) {
-        s[a] = Math.max(1, s[a] - 1);
+s[a] = Math.max(8, s[a] - 1);
         nextPb1 = null;
       }
       s[a] = Math.min(17, s[a] + 2); // ★ +2 상한 17
@@ -1448,7 +1448,8 @@ function togglePb1(a: Abil, checked: boolean) {
     const s = { ...prev };
 
     // 기존 +1 회수
-    if (pbBonus1) s[pbBonus1] = Math.max(1, s[pbBonus1] - 1);
+    if (pbBonus1) s[pbBonus1] = Math.max(8, s[pbBonus1] - 1);
+
 
     let nextPb1: Abil | null = null;
     let nextPb2 = pbBonus2;
@@ -1456,7 +1457,7 @@ function togglePb1(a: Abil, checked: boolean) {
     if (checked) {
       // 같은 능력치에 +2가 걸려 있으면 먼저 해제
       if (pbBonus2 === a) {
-        s[a] = Math.max(1, s[a] - 2);
+s[a] = Math.max(8, s[a] - 2);
         nextPb2 = null;
       }
       s[a] = Math.min(16, s[a] + 1); // ★ +1 상한 16
@@ -2008,7 +2009,7 @@ function excludeFeatItem(detailLine: string){
         max={15}  // 입력 상한 15
         value={stats[a]}
         onChange={(e) => {
-          const v = Math.max(1, Math.min(15, parseInt(e.target.value || "1", 10)));
+const v = Math.max(8, Math.min(15, parseInt(e.target.value || "8", 10)));
           setStats((prev) => ({ ...prev, [a]: v }));
         }}
        <input
