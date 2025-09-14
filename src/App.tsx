@@ -1155,25 +1155,42 @@ function rollClass() {
     const { bonus2, bonus1, final } = rollPointBuyWithBonuses();
     setPbBonus2(bonus2); setPbBonus1(bonus1); setStats(final);
   }
-function rollWeaponsBtn() {
+function rollWeaponsBtn(overrides?: {
+  raceKey?: keyof typeof RACES | "-";
+  classKey?: keyof typeof CLASSES | "-";
+  subclassKo?: string;
+}) {
   if (lockWeapons) return; // 전체 잠금
-  const raceKoLabel  = raceKey  === "-" ? "" : RACES[raceKey].ko;
-  const classKoLabel = classKey === "-" ? "" : CLASSES[classKey].ko;
+
+  const rk = overrides?.raceKey ?? raceKey;
+  const ck = overrides?.classKey ?? classKey;
+  const sc = overrides?.subclassKo ?? subclassKo;
+
+  const raceKoLabel  = rk === "-" ? "" : RACES[rk].ko;
+  const classKoLabel = ck === "-" ? "" : CLASSES[ck].ko;
+
+  // ★ 초기 진입 가드: 아무 것도 안 고른 상태면 무기 결과를 비워둠 (랜덤 금지)
+  if (!raceKoLabel && !classKoLabel) {
+    setWeaponsKO([]);
+    // 디버그도 맞춰 저장하고 싶다면 여기서 debugInfo 업데이트 가능
+    return;
+  }
 
   const base = computeWeapons(
     raceKoLabel,
     classKoLabel,
-    subclassKo !== "-" ? subclassKo : undefined
+    sc !== "-" ? sc : undefined
   );
+
   const desired = Math.max(lockWeaponSet.size, base.length || 2);
   const pool = base;
   const fallback = ALL_WEAPONS_KO_LIST;
 
   const next = mergeLocked(Array.from(lockWeaponSet), pool, desired, fallback);
   setWeaponsKO(next);
-}
 
-  
+  // (옵션) 무기 디버그 찍고 싶으면 여기에 setDebugInfo({...}) 추가 가능
+}
 
  function rollAny2Weapons() {
   if (lockWeapons) return; // 전체 잠금
@@ -1298,9 +1315,6 @@ function rollAll() {
 
   // 6) 신체유형(잠금 아닐 때만)
   if (!lockBodyType) setBodyType(choice(allowedBodyTypes(r)));
-
-  // 7) 무기/기술 재계산(개별 잠금 반영)
-  setTimeout(() => { rollWeaponsBtn(); rollSkillsBtn(); }, 0);
 }
 
 // +2, +1 보너스 수동 변경 핸들러
@@ -1510,9 +1524,9 @@ function excludeFeatItem(detailLine: string){
               {/* 조작 */}
               <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
                 <button onClick={rollAll} style={btnPrimary}>{T.rollAll}</button>
-                <button onClick={()=>{rollRace(); setTimeout(rollWeaponsBtn,0);}} style={btn}>{T.onlyRace}</button>
-                <button onClick={()=>{rollClass(); setTimeout(()=>{rollWeaponsBtn(); rollSkillsBtn();},0);}} style={btn}>{T.onlyClass}</button>
-                <button onClick={()=>{rollBackground(); setTimeout(rollSkillsBtn,0);}} style={btn}>{T.onlyBG}</button>
+                <button onClick={()=>{ rollRace(); }} style={btn}>{T.onlyRace}</button>
+                <button onClick={()=>{ rollClass(); }} style={btn}>{T.onlyClass}</button>
+                <button onClick={()=>{ rollBackground(); }} style={btn}>{T.onlyBG}</button>
                 <button onClick={rollStatsBtn} style={btn}>{T.rollStats}</button>
                 <button onClick={rollWeaponsBtn} style={btn}>{T.rerollWeapons}</button>
                 <button onClick={rollAny2Weapons} style={btn}>{T.any2Weapons}</button>
