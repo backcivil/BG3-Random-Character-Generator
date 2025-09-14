@@ -227,32 +227,6 @@ function bodyTypeLabel(bt: BodyType, lang: Lang = "ko"): string {
          bt===3 ? "3(큰 여성)" :
                   "4(큰 남성)";
 }
-  <div style={{ ...row, alignItems:"flex-start" }}>
-  <label style={label}>{T.abilities}</label>
-  <div style={{ display:"grid", gridTemplateColumns:"repeat(3, minmax(0, 160px))", gap:8 }}>
-    {ABILS.map(a => (
-      <div key={a} style={{ border:"1px solid #e5e7eb", borderRadius:10, padding:8 }}>
-        <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{abilLabel(a)}</div>
-        <input
-          type="number" min={3} max={20}
-          value={stats[a]}
-          onChange={(e)=>setStats(prev=>({ ...prev, [a]: Math.max(3, Math.min(20, parseInt(e.target.value||"0",10))) }))}
-          style={{...input, width:96}}
-          disabled={false}
-        />
-        <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-          <input
-            type="checkbox"
-            checked={lockStat[a]}
-            onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
-          />
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
-
 
 /** ========= 배경/스킬 ========= */
 const BACK_KO = ["복사","사기꾼","범죄자","연예인","시골 영웅","길드 장인","귀족","이방인","현자","군인","부랑아"] as const;
@@ -1856,22 +1830,52 @@ function excludeFeatItem(detailLine: string){
   </div>
 )}
 
-
-      {/* 기술 픽커 */}
-   {/* 기술 픽커 */}
+  {/* 기술 픽커 */}
 {showSkillPicker && (
-  <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-    <div style={{ background:"#fff", padding:16, borderRadius:12, minWidth:380, maxWidth:520, width:"90%" }}>
-      <h4 style={{ marginTop:0 }}>{T.skills}</h4>
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.35)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <div
+      style={{
+        background: "#fff",
+        padding: 16,
+        borderRadius: 12,
+        minWidth: 380,
+        maxWidth: 520,
+        width: "90%",
+      }}
+    >
+      <h4 style={{ marginTop: 0 }}>{T.skills}</h4>
 
       {/* 툴바 */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-        <div style={{ fontSize:12, color:"#6b7280" }}>선택: {tempSkills.size}</div>
-        <div style={{ display:"flex", gap:8 }}>
-          <button style={btnSecondary} onClick={()=>setTempSkills(new Set())}>전부 해제</button>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#6b7280" }}>
+          선택: {tempSkills.size}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
           <button
             style={btnSecondary}
-            onClick={()=>{
+            onClick={() => setTempSkills(new Set())}
+          >
+            전부 해제
+          </button>
+          <button
+            style={btnSecondary}
+            onClick={() => {
               const all = new Set(allSkills);
               setTempSkills(all);
             }}
@@ -1882,13 +1886,24 @@ function excludeFeatItem(detailLine: string){
       </div>
 
       {/* 목록 */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(2, minmax(0,1fr))", gap:8, maxHeight:360, overflow:"auto" }}>
-        {allSkills.map((s)=>(
-          <label key={s} style={{ display:"flex", gap:8, alignItems:"center" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+          gap: 8,
+          maxHeight: 360,
+          overflow: "auto",
+        }}
+      >
+        {allSkills.map((s) => (
+          <label
+            key={s}
+            style={{ display: "flex", gap: 8, alignItems: "center" }}
+          >
             <input
               type="checkbox"
               checked={tempSkills.has(s)}
-              onChange={(e)=>{
+              onChange={(e) => {
                 const n = new Set(tempSkills);
                 e.target.checked ? n.add(s) : n.delete(s);
                 setTempSkills(n);
@@ -1900,11 +1915,23 @@ function excludeFeatItem(detailLine: string){
       </div>
 
       {/* 액션 */}
-      <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:12 }}>
-        <button style={btnSecondary} onClick={()=>setShowSkillPicker(false)}>{T.cancel}</button>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          justifyContent: "flex-end",
+          marginTop: 12,
+        }}
+      >
+        <button
+          style={btnSecondary}
+          onClick={() => setShowSkillPicker(false)}
+        >
+          {T.cancel}
+        </button>
         <button
           style={btn}
-          onClick={()=>{
+          onClick={() => {
             setSkills(Array.from(tempSkills));
             setShowSkillPicker(false);
           }}
@@ -1915,5 +1942,6 @@ function excludeFeatItem(detailLine: string){
     </div>
   </div>
 )}
+
 
 
