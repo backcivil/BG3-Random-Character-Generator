@@ -1417,29 +1417,60 @@ function rollAll() {
   if (!lockBodyType) setBodyType(choice(allowedBodyTypes(r)));
 }
 
-// +2, +1 보너스 수동 변경 핸들러
-function handleChangePb2(v: string){
-  const nxt = (v==="" ? null : (v as Abil));
-  setStats(prev=>{
+// === (+2 / +1) 행별 체크박스용 토글 핸들러 ===
+function togglePb2(a: Abil, checked: boolean) {
+  if (lockPb2) return;
+  setStats(prev => {
     const s = { ...prev };
+
+    // 기존 +2 회수
     if (pbBonus2) s[pbBonus2] = Math.max(1, s[pbBonus2] - 2);
-    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 2);
+
+    let nextPb2: Abil | null = null;
+    let nextPb1 = pbBonus1;
+
+    if (checked) {
+      // 같은 능력치에 +1이 걸려 있으면 먼저 해제
+      if (pbBonus1 === a) {
+        s[a] = Math.max(1, s[a] - 1);
+        nextPb1 = null;
+      }
+      s[a] = Math.min(20, s[a] + 2);
+      nextPb2 = a;
+    }
+
+    setPbBonus2(nextPb2);
+    if (nextPb1 !== pbBonus1) setPbBonus1(nextPb1);
     return s;
   });
-  setPbBonus2(nxt);
 }
-function handleChangePb1(v: string){
-  const nxt = (v==="" ? null : (v as Abil));
-  setStats(prev=>{
+
+function togglePb1(a: Abil, checked: boolean) {
+  if (lockPb1) return;
+  setStats(prev => {
     const s = { ...prev };
+
+    // 기존 +1 회수
     if (pbBonus1) s[pbBonus1] = Math.max(1, s[pbBonus1] - 1);
-    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 1);
+
+    let nextPb1: Abil | null = null;
+    let nextPb2 = pbBonus2;
+
+    if (checked) {
+      // 같은 능력치에 +2가 걸려 있으면 먼저 해제
+      if (pbBonus2 === a) {
+        s[a] = Math.max(1, s[a] - 2);
+        nextPb2 = null;
+      }
+      s[a] = Math.min(20, s[a] + 1);
+      nextPb1 = a;
+    }
+
+    setPbBonus1(nextPb1);
+    if (nextPb2 !== pbBonus2) setPbBonus2(nextPb2);
     return s;
   });
-  setPbBonus1(nxt);
 }
-
-
 
   /** ===== 주사위/승자 ===== */
  function handleRollDice(){
@@ -1940,105 +1971,87 @@ function excludeFeatItem(detailLine: string){
         <input type="checkbox" checked={lockBodyType} onChange={e=>setLockBodyType(e.target.checked)}/>
       </label>
     </div>
-{/* 능력치 보너스(+2 / +1) */}
-<div style={{ ...row, marginTop:8 }}>
-  <label style={label}>+2 / +1</label>
+{/* 능력치 & 보너스(행별 배정) */}
+<div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+  {/* 헤더 줄 */}
+  <div style={{
+    display:"grid",
+    gridTemplateColumns:"72px 110px 60px 70px 70px",
+    alignItems:"center",
+    gap:8,
+    marginTop:8
+  }}>
+    <div style={{ color:"#6b7280" }}>{T.abilities}</div>
+    <div />
+    <div style={{ color:"#6b7280", textAlign:"center" }}>{L[lang].locks}</div>
+    <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
+      <span>+2</span>
+      <input type="checkbox" checked={lockPb2} onChange={e=>setLockPb2(e.target.checked)} />
+    </label>
+    <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
+      <span>+1</span>
+      <input type="checkbox" checked={lockPb1} onChange={e=>setLockPb1(e.target.checked)} />
+    </label>
+  </div>
 
-  {/* +2 선택 */}
-  <select
-    value={pbBonus2 ?? ""}
-    onChange={(e:any)=>handleChangePb2(e.target.value)}
-    style={{...select, minWidth:140, maxWidth:160}}
-    disabled={lockPb2}
-    title={lockPb2 ? "고정되어 있음" : ""}
-  >
-    <option value="">+2 -</option>
-    {ABILS.map(a => <option key={a} value={a}>{abilLabel(a)}</option>)}
-  </select>
-  <label style={{display:"flex", alignItems:"center", gap:6}}>
-    <input type="checkbox" checked={lockPb2} onChange={(e)=>setLockPb2(e.target.checked)} />
-    <span>{L[lang].locks}</span>
-  </label>
+  {/* 행들 */}
+  {ABILS.map(a=>(
+    <div key={a} style={{
+      display:"grid",
+      gridTemplateColumns:"72px 110px 60px 70px 70px",
+      alignItems:"center",
+      gap:8
+    }}>
+      {/* 이름 */}
+      <div>{abilLabel(a)}</div>
 
-  {/* +1 선택 */}
-  <select
-    value={pbBonus1 ?? ""}
-    onChange={(e:any)=>handleChangePb1(e.target.value)}
-    style={{...select, minWidth:140, maxWidth:160}}
-    disabled={lockPb1}
-    title={lockPb1 ? "고정되어 있음" : ""}
-  >
-    <option value="">+1 -</option>
-    {ABILS.map(a => <option key={a} value={a}>{abilLabel(a)}</option>)}
-  </select>
-  <label style={{display:"flex", alignItems:"center", gap:6}}>
-    <input type="checkbox" checked={lockPb1} onChange={(e)=>setLockPb1(e.target.checked)} />
-    <span>{L[lang].locks}</span>
-  </label>
+      {/* 값 입력 */}
+      <input
+        type="number"
+        min={1} max={20}
+        value={stats[a]}
+        onChange={(e)=>{
+          const v = Math.max(1, Math.min(20, parseInt(e.target.value||"1",10)));
+          setStats(prev=>({ ...prev, [a]: v }));
+        }}
+        style={{ ...input, width:110 }}
+      />
+
+      {/* 개별 고정 */}
+      <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
+        <input
+          type="checkbox"
+          checked={lockStat[a]}
+          onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
+        />
+        <span style={{ fontSize:12, color:"#6b7280" }}>고정</span>
+      </label>
+
+      {/* +2 체크 */}
+      <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
+        <input
+          type="checkbox"
+          checked={pbBonus2===a}
+          disabled={lockPb2}
+          onChange={(e)=>togglePb2(a, e.target.checked)}
+        />
+        <span>+2</span>
+      </label>
+
+      {/* +1 체크 */}
+      <label style={{ display:"flex", alignItems:"center", gap:6, justifySelf:"center" }}>
+        <input
+          type="checkbox"
+          checked={pbBonus1===a}
+          disabled={lockPb1}
+          onChange={(e)=>togglePb1(a, e.target.checked)}
+        />
+        <span>+1</span>
+      </label>
+    </div>
+  ))}
 </div>
 
-    {/* 능력치: 값 설정 + 개별 고정 + 보너스 대상 선택 */}
-    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
-      <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={label}>{T.abilities}</span>
-        </div>
-        {ABILS.map(a=>(
-          <div key={a} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ width:72 }}>{abilLabel(a)}</span>
-              <input
-                type="number"
-                min={1} max={20}
-                value={stats[a]}
-                onChange={(e)=>{
-                  const v = Math.max(1, Math.min(20, parseInt(e.target.value||"1",10)));
-                  setStats(prev=>({ ...prev, [a]: v }));
-                }}
-                style={{...input, width:90}}
-              />
-            </div>
-            <label style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span>고정</span>
-              <input
-                type="checkbox"
-                checked={lockStat[a]}
-                onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
-              />
-            </label>
-          </div>
-        ))}
-      </div>
-
-      {/* +2 / +1 대상 선택 */}
-      <div style={{ minWidth:220, display:"flex", flexDirection:"column", gap:8 }}>
-        <div style={{ fontWeight:600 }}>보너스</div>
-        <label style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ width:36 }}>+2</span>
-          <select
-            value={pbBonus2 ?? ""}
-            onChange={(e)=>handleChangePb2(e.target.value)}
-            style={{...select, minWidth:140}}
-          >
-            <option value="">-</option>
-            {ABILS.map(a=><option key={a} value={a}>{abilLabel(a)}</option>)}
-          </select>
-        </label>
-        <label style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ width:36 }}>+1</span>
-          <select
-            value={pbBonus1 ?? ""}
-            onChange={(e)=>handleChangePb1(e.target.value)}
-            style={{...select, minWidth:140}}
-          >
-            <option value="">-</option>
-            {ABILS.map(a=><option key={a} value={a}>{abilLabel(a)}</option>)}
-          </select>
-        </label>
-      </div>
-    </div>
-
-  </div>
 </section>
 
 
