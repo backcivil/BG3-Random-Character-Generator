@@ -87,7 +87,7 @@ onlyBodyType: "신체유형만",
     featSection: "재주",
     rollFeat: "재주 뽑기",
     langBtn: "English",
-    str: "힘", dex: "민첩", con: "건강", int: "지능", wis: "지혜", cha: "매력",
+    str: "근력", dex: "민첩", con: "건강", int: "지능", wis: "지혜", cha: "매력",
     diceTitle: "주사위 굴리기",
     rollDice: "굴리기",
     vsTitle: "승자 정하기",
@@ -160,7 +160,7 @@ onlyBodyType: "Body Type Only",
 /** ========= 능력치 ========= */
 const ABILS = ["STR","DEX","CON","INT","WIS","CHA"] as const;
 type Abil = (typeof ABILS)[number];
-const abilKo: Record<Abil,string> = { STR:"힘", DEX:"민첩", CON:"건강", INT:"지능", WIS:"지혜", CHA:"매력" };
+const abilKo: Record<Abil,string> = { STR:"근력", DEX:"민첩", CON:"건강", INT:"지능", WIS:"지혜", CHA:"매력" };
 
 /** ========= 클래스/종족 ========= */
 const CLASSES: Record<string, { ko: string; subclasses: string[] }> = {
@@ -323,7 +323,7 @@ const SUBCLASS_EXTRA_WEAPONS: Record<string,string[]> = {
   "위저드:칼날 노래": ["단검","장검","레이피어","협도","소검","낫"],
 };
 // ====== 주문 풀(요약) : 패치8 포함 ======
-const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 힘","망자의 종소리"];
+const CANTRIPS_PATCH8 = ["폭음의 검","폭발하는 근력","망자의 종소리"];
 const LV2_PATCH8 = ["그림자 검"];
 
 // ====== 클래스별 주문 목록 ======
@@ -709,7 +709,7 @@ function featRollCore(id: FeatId, lang: Lang, excluded: Set<string>): { name: st
   const label = FEATS_ALL.find(f=>f.id===id)!;
   const name = lang==="ko"?label.ko:label.en;
   const lines: string[] = [];
-  const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
+  const abilKoMap: Record<string,string> = {STR:"근력",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
 
   // 헬퍼
   const skillDisp = (s: SkillKey) => lang==="ko" ? SK.KO[s] : SK.EN[s];
@@ -871,7 +871,7 @@ function rollSingleForFeat(
       return pickOne(all, "무기 숙련");
     }
     if (kind.startsWith("능력 +1")) {
-      const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
+      const abilKoMap: Record<string,string> = {STR:"근력",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
       const pool = ["STR","DEX"].map(a=>lang==="ko"?abilKoMap[a]:a);
       return pickOne(pool, "능력 +1");
     }
@@ -881,7 +881,7 @@ function rollSingleForFeat(
      id==="MediumArmourMaster" || id==="ModeratelyArmoured" || id==="HeavyArmourMaster" ||
      id==="TavernBrawler") && kind.startsWith("능력 +1")
   ) {
-    const abilKoMap: Record<string,string> = {STR:"힘",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
+    const abilKoMap: Record<string,string> = {STR:"근력",DEX:"민첩",CON:"건강",INT:"지능",WIS:"지혜",CHA:"매력"};
     const base = (id==="TavernBrawler") ? ["STR","CON"] : ["STR","DEX"];
     const pool = base.map(a=>lang==="ko"?abilKoMap[a]:a);
     return pickOne(pool, "능력 +1");
