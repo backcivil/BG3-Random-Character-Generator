@@ -1234,6 +1234,27 @@ function rollAll() {
   setTimeout(() => { rollWeaponsBtn(); rollSkillsBtn(); }, 0);
 }
 
+// +2, +1 보너스 수동 변경 핸들러
+function handleChangePb2(v: string){
+  const nxt = (v==="" ? null : (v as Abil));
+  setStats(prev=>{
+    const s = { ...prev };
+    if (pbBonus2) s[pbBonus2] = Math.max(1, s[pbBonus2] - 2);
+    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 2);
+    return s;
+  });
+  setPbBonus2(nxt);
+}
+function handleChangePb1(v: string){
+  const nxt = (v==="" ? null : (v as Abil));
+  setStats(prev=>{
+    const s = { ...prev };
+    if (pbBonus1) s[pbBonus1] = Math.max(1, s[pbBonus1] - 1);
+    if (nxt)      s[nxt]      = Math.min(20, s[nxt] + 1);
+    return s;
+  });
+  setPbBonus1(nxt);
+}
 
 
 
@@ -1494,274 +1515,314 @@ function excludeFeatItem(detailLine: string){
          {/* 수동 선택 & 고정 */}
 <section style={{ border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
   <h3 style={{ fontSize:18, fontWeight:700, margin:"0 0 12px" }}>{T.manualPanel}</h3>
+  {/* 공통 줄 스타일 */}
+  {/** 한 줄: 좌측 컨트롤들 / 우측 '고정 □' */}
+  {/** label 폭은 기존 label 상수 재사용 */}
+  <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
 
-  {/* 종족 (한 줄 정리) */}
-  <div style={row}>
-    <label style={label}>{T.race}</label>
-    <select
-      value={raceKey}
-      onChange={(e:any)=>{
-        const k = e.target.value as keyof typeof RACES | "-";
-        setRaceKey(k);
-        setSubraceKo(k==="-" ? "-" : (RACES[k].subs?.[0] ?? "-"));
-      }}
-      style={{...select, minWidth:180, maxWidth:200}}
-    >
-      <option value="-">-</option>
-      {raceOptions.map(k=><option key={k} value={k}>{lang==="ko"?RACES[k].ko:k}</option>)}
-    </select>
-
-    <select
-      disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)}
-      value={subraceKo}
-      onChange={e=>setSubraceKo(e.target.value)}
-      style={{...select, minWidth:180, maxWidth:200}}
-    >
-      {(raceKey==="-" || !RACES[raceKey].subs)
-        ? <option value="-">-</option>
-        : RACES[raceKey].subs!.map(s=><option key={s} value={s}>{s}</option>)
-      }
-    </select>
-
-    <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-    <label style={{display:"flex", alignItems:"center", gap:6}}>
-      <input type="checkbox" checked={lockRace} onChange={(e)=>setLockRace(e.target.checked)} />
-      <span>종족</span>
-    </label>
-    <label style={{display:"flex", alignItems:"center", gap:6}}>
-      <input type="checkbox" checked={lockSubrace} onChange={(e)=>setLockSubrace(e.target.checked)} />
-      <span>서브</span>
-    </label>
-  </div>
-
-  {/* 클래스 */}
-  <div style={row}>
-    <label style={label}>{T.klass}</label>
-
-    {/* 클래스 선택 */}
-    <select
-      value={classKey}
-      onChange={(e:any)=>{
-        const k = e.target.value as keyof typeof CLASSES | "-";
-        setClassKey(k);
-        const sc = k==="-" ? "-" : CLASSES[k].subclasses[0];
-        setSubclassKo(sc);
-        if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
-        else setDeityKo("-");
-      }}
-      style={{...select, minWidth:200, maxWidth:220}}
-    >
-      <option value="-">-</option>
-      {classOptions.map((k)=>(
-        <option key={k} value={k}>{lang==="ko" ? CLASSES[k].ko : k}</option>
-      ))}
-    </select>
-
-    <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-    <label style={{display:"flex", alignItems:"center", gap:6}}>
-      <input type="checkbox" checked={lockClass} onChange={(e)=>setLockClass(e.target.checked)} />
-      <span>클래스</span>
-    </label>
-    <label style={{display:"flex", alignItems:"center", gap:6}}>
-      <input type="checkbox" checked={lockSubclass} onChange={(e)=>setLockSubclass(e.target.checked)} />
-      <span>서브</span>
-    </label>
-  </div>
-
-  {/* 서브클래스 */}
-  <div style={row}>
-    <label style={label}></label>
-    <select
-      disabled={classKey==="-" }
-      value={subclassKo}
-      onChange={(e)=>setSubclassKo(e.target.value)}
-      style={{...select, minWidth:200, maxWidth:220}}
-    >
-      {classKey==="-" 
-        ? <option value="-">-</option>
-        : CLASSES[classKey].subclasses.map((s)=>(
-            <option key={s} value={s}>{s}</option>
-          ))
-      }
-    </select>
-  </div>
-
-  {/* 신앙 (클레릭 전용) */}
-  {classKey === "Cleric" && (
-    <div style={row}>
-      <label style={label}>신앙</label>
-      <select
-        value={deityKo}
-        onChange={(e)=>setDeityKo(e.target.value)}
-        disabled={lockDeity}
-        style={{...select, minWidth:220, maxWidth:260}}
-      >
-        {deityPoolForUI(raceKey, subraceKo).map(d => <option key={d} value={d}>{d}</option>)}
-      </select>
-      <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-      <input type="checkbox" checked={lockDeity} onChange={(e)=>setLockDeity(e.target.checked)} />
-    </div>
-  )}
-
-  {/* 출신 */}
-  <div style={row}>
-    <label style={label}>{T.background}</label>
-    <select
-      value={bg}
-      onChange={(e:any)=>setBg(e.target.value as Background)}
-      style={{...select, minWidth:240, maxWidth:260}}
-    >
-      <option value="-">-</option>
-      {BACK_KO.map(b=><option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
-    </select>
-    <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-    <input type="checkbox" checked={lockBackground} onChange={(e)=>setLockBackground(e.target.checked)} />
-  </div>
-
-  {/* 무기 선택 */}
-  <div style={row}>
-    <label style={label}>{T.weapons}</label>
-    <button
-      style={btn}
-      onClick={() => { setTempWeapons(new Set(weaponsKO)); setShowWeaponPicker(true); }}
-      disabled={lockWeapons}
-      title={lockWeapons ? "고정되어 있음" : ""}
-    >
-      {T.openPicker}
-    </button>
-    <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
-      {weaponsKO.join(", ")}
-    </div>
-  </div>
-  {/* 무기 전체 고정 */}
-  <div style={{ ...row, marginTop:4 }}>
-    <div style={{ width:72 }} />
-    <label style={{display:"flex", alignItems:"center", gap:6}}>
-      <input
-        type="checkbox"
-        checked={lockWeapons}
-        onChange={(e)=>setLockWeapons(e.target.checked)}
-      />
-      <span>무기 전체 고정</span>
-    </label>
-  </div>
-
-  {/* 무기 개별 잠금 토글 */}
-  <div style={{ ...row, marginTop:6 }}>
-    <div style={{ width:72 }} />
-    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-      {weaponsKO.map(w => (
-        <label key={w} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
-          <input
-            type="checkbox"
-            checked={lockWeaponSet.has(w)}
-            onChange={(e)=>{
-              const n=new Set(lockWeaponSet);
-              e.target.checked ? n.add(w) : n.delete(w);
-              setLockWeaponSet(n);
-            }}
-          />
-          <span>{w}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-
-  {/* 기술 선택 */}
-  <div style={row}>
-    <label style={label}>{T.skills}</label>
-    <button
-      style={btn}
-      onClick={() => { setTempSkills(new Set(skills)); setShowSkillPicker(true); }}
-      disabled={lockSkills}
-      title={lockSkills ? "고정되어 있음" : ""}
-    >
-      {T.openPicker}
-    </button>
-    <div style={{ color:"#374151", minWidth:180, maxWidth:300, whiteSpace:"pre-wrap" }}>
-      {skills.map(skillLabel).join(", ")}
-    </div>
-  </div>
-  {/* 기술 전체 고정 */}
-  <div style={{ ...row, marginTop:4 }}>
-    <div style={{ width:72 }} />
-    <label style={{display:"flex", alignItems:"center", gap:6}}>
-      <input
-        type="checkbox"
-        checked={lockSkills}
-        onChange={(e)=>setLockSkills(e.target.checked)}
-      />
-      <span>기술 전체 고정</span>
-    </label>
-  </div>
-
-  {/* 기술 개별 잠금 토글 */}
-  <div style={{ ...row, marginTop:6 }}>
-    <div style={{ width:72 }} />
-    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-      {skills.map(s => (
-        <label key={s} style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}>
-          <input
-            type="checkbox"
-            checked={lockSkillSet.has(s)}
-            onChange={(e)=>{
-              const n=new Set(lockSkillSet);
-              e.target.checked ? n.add(s) : n.delete(s);
-              setLockSkillSet(n);
-            }}
-          />
-          <span>{skillLabel(s)}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-
-  {/* 신체유형 */}
-  <div style={row}>
-    <label style={label}>{T.bodyType}</label>
-    <select
-      value={bodyType ?? ""}
-      onChange={(e:any)=>{
-        const v = e.target.value === "" ? null : (parseInt(e.target.value,10) as BodyType);
-        setBodyType(v);
-      }}
-      style={{...select, minWidth:180, maxWidth:200}}
-      disabled={lockBodyType}
-      title={lockBodyType ? "고정되어 있음" : ""}
-    >
-      <option value="">-</option>
-      {allowedBodyTypes(raceKey).map((bt)=>(
-        <option key={bt} value={bt}>{bodyTypeLabel(bt, lang)}</option>
-      ))}
-    </select>
-    <span style={{ color:"#6b7280" }}>{L[lang].locks}</span>
-    <input
-      type="checkbox"
-      checked={lockBodyType}
-      onChange={(e)=>setLockBodyType(e.target.checked)}
-    />
-  </div>
-    {/* 능력치 개별 고정 */}
-  <div style={{ ...row, marginTop:8 }}>
-    <label style={label}>{T.abilities}</label>
-    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-      {ABILS.map((a)=>(
-        <label
-          key={a}
-          style={{ display:"flex", gap:6, alignItems:"center", border:"1px solid #e5e7eb", borderRadius:8, padding:"2px 6px" }}
+    {/* 종족 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>{T.race}</span>
+        <select
+          value={raceKey}
+          onChange={(e:any)=>{
+            const k = e.target.value as keyof typeof RACES | "-";
+            setRaceKey(k);
+            setSubraceKo(k==="-" ? "-" : (RACES[k].subs?.[0] ?? "-"));
+          }}
+          style={{...select, minWidth:180}}
         >
-          <input
-            type="checkbox"
-            checked={lockStat[a]}
-            onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
-          />
-          <span>{abilLabel(a)}</span>
+          <option value="-">-</option>
+          { (Object.keys(RACES) as (keyof typeof RACES)[]).map(k=>
+            <option key={k} value={k}>{lang==="ko"?RACES[k].ko:k}</option>
+          )}
+        </select>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>고정</span>
+        <input type="checkbox" checked={lockRace} onChange={e=>setLockRace(e.target.checked)}/>
+      </label>
+    </div>
+
+    {/* 하위 종족 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>하위 종족</span>
+        <select
+          disabled={raceKey==="-" || !(RACES[raceKey].subs?.length)}
+          value={subraceKo}
+          onChange={e=>setSubraceKo(e.target.value)}
+          style={{...select, minWidth:180}}
+        >
+          {(raceKey==="-" || !RACES[raceKey].subs)
+            ? <option value="-">-</option>
+            : RACES[raceKey].subs!.map(s=><option key={s} value={s}>{s}</option>)
+          }
+        </select>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>고정</span>
+        <input type="checkbox" checked={lockSubrace} onChange={e=>setLockSubrace(e.target.checked)}/>
+      </label>
+    </div>
+
+    {/* 클래스 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>{T.klass}</span>
+        <select
+          value={classKey}
+          onChange={(e:any)=>{
+            const k = e.target.value as keyof typeof CLASSES | "-";
+            setClassKey(k);
+            const sc = k==="-" ? "-" : CLASSES[k].subclasses[0];
+            setSubclassKo(sc);
+            if (k === "Cleric") setDeityKo(randomDeity(raceKey, subraceKo));
+            else setDeityKo("-");
+          }}
+          style={{...select, minWidth:200}}
+        >
+          <option value="-">-</option>
+          {(Object.keys(CLASSES) as (keyof typeof CLASSES)[]).map(k=>
+            <option key={k} value={k}>{lang==="ko"?CLASSES[k].ko:k}</option>
+          )}
+        </select>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>고정</span>
+        <input type="checkbox" checked={lockClass} onChange={e=>setLockClass(e.target.checked)}/>
+      </label>
+    </div>
+
+    {/* 하위 클래스 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>하위 클래스</span>
+        <select
+          disabled={classKey==="-" }
+          value={subclassKo}
+          onChange={(e)=>setSubclassKo(e.target.value)}
+          style={{...select, minWidth:200}}
+        >
+          {classKey==="-" ? <option value="-">-</option>
+            : CLASSES[classKey].subclasses.map(s=><option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>고정</span>
+        <input type="checkbox" checked={lockSubclass} onChange={e=>setLockSubclass(e.target.checked)}/>
+      </label>
+    </div>
+
+    {/* 신앙(클레릭일 때만) */}
+    {classKey==="Cleric" && (
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+          <span style={label}>신앙</span>
+          <select
+            value={deityKo}
+            onChange={(e)=>setDeityKo(e.target.value)}
+            disabled={lockDeity}
+            style={{...select, minWidth:220}}
+          >
+            {deityPoolForUI(raceKey, subraceKo).map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <span>고정</span>
+          <input type="checkbox" checked={lockDeity} onChange={e=>setLockDeity(e.target.checked)}/>
         </label>
+      </div>
+    )}
+
+    {/* 출신 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>{T.background}</span>
+        <select
+          value={bg}
+          onChange={(e:any)=>setBg(e.target.value as Background)}
+          style={{...select, minWidth:240}}
+        >
+          <option value="-">-</option>
+          {BACK_KO.map(b=><option key={b} value={b}>{lang==="ko"?b:BACK_EN[b]}</option>)}
+        </select>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>고정</span>
+        <input type="checkbox" checked={lockBackground} onChange={e=>setLockBackground(e.target.checked)}/>
+      </label>
+    </div>
+
+    {/* 무기 선택 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>{T.weapons}</span>
+        <button
+          style={btn}
+          onClick={() => { setTempWeapons(new Set(weaponsKO)); setShowWeaponPicker(true); }}
+          disabled={lockWeapons}
+          title={lockWeapons ? "고정되어 있음" : ""}
+        >
+          선택
+        </button>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>무기 전체 고정</span>
+        <input type="checkbox" checked={lockWeapons} onChange={e=>setLockWeapons(e.target.checked)}/>
+      </label>
+    </div>
+    {/* 무기 개별 고정: '창 고정 □' 형태 */}
+    <div style={{ marginLeft:72, display:"flex", flexDirection:"column", gap:6 }}>
+      {weaponsKO.map(w=>(
+        <div key={w} style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <span>{w}</span>
+          <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span>고정</span>
+            <input
+              type="checkbox"
+              checked={lockWeaponSet.has(w)}
+              onChange={(e)=>{
+                const n=new Set(lockWeaponSet);
+                e.target.checked ? n.add(w) : n.delete(w);
+                setLockWeaponSet(n);
+              }}
+            />
+          </label>
+        </div>
       ))}
     </div>
-  </div>
 
+    {/* 기술 선택 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>{T.skills}</span>
+        <button
+          style={btn}
+          onClick={() => { setTempSkills(new Set(skills)); setShowSkillPicker(true); }}
+          disabled={lockSkills}
+          title={lockSkills ? "고정되어 있음" : ""}
+        >
+          선택
+        </button>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>기술 전체 고정</span>
+        <input type="checkbox" checked={lockSkills} onChange={e=>setLockSkills(e.target.checked)}/>
+      </label>
+    </div>
+    {/* 기술 개별 고정: '역사 고정 □' 형태 */}
+    <div style={{ marginLeft:72, display:"flex", flexDirection:"column", gap:6 }}>
+      {skills.map(s=>(
+        <div key={s} style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <span>{skillLabel(s)}</span>
+          <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span>고정</span>
+            <input
+              type="checkbox"
+              checked={lockSkillSet.has(s)}
+              onChange={(e)=>{
+                const n=new Set(lockSkillSet);
+                e.target.checked ? n.add(s) : n.delete(s);
+                setLockSkillSet(n);
+              }}
+            />
+          </label>
+        </div>
+      ))}
+    </div>
+
+    {/* 신체유형 */}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={label}>{T.bodyType}</span>
+        <select
+          value={bodyType ?? ""}
+          onChange={(e:any)=>{
+            const v = e.target.value === "" ? null : (parseInt(e.target.value,10) as BodyType);
+            setBodyType(v);
+          }}
+          style={{...select, minWidth:180}}
+          disabled={lockBodyType}
+          title={lockBodyType ? "고정되어 있음" : ""}
+        >
+          <option value="">-</option>
+          {allowedBodyTypes(raceKey).map(bt=>(
+            <option key={bt} value={bt}>{bodyTypeLabel(bt, lang)}</option>
+          ))}
+        </select>
+      </div>
+      <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span>고정</span>
+        <input type="checkbox" checked={lockBodyType} onChange={e=>setLockBodyType(e.target.checked)}/>
+      </label>
+    </div>
+
+    {/* 능력치: 값 설정 + 개별 고정 + 보너스 대상 선택 */}
+    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={label}>{T.abilities}</span>
+        </div>
+        {ABILS.map(a=>(
+          <div key={a} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ width:72 }}>{abilLabel(a)}</span>
+              <input
+                type="number"
+                min={1} max={20}
+                value={stats[a]}
+                onChange={(e)=>{
+                  const v = Math.max(1, Math.min(20, parseInt(e.target.value||"1",10)));
+                  setStats(prev=>({ ...prev, [a]: v }));
+                }}
+                style={{...input, width:90}}
+              />
+            </div>
+            <label style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span>고정</span>
+              <input
+                type="checkbox"
+                checked={lockStat[a]}
+                onChange={(e)=>setLockStat(prev=>({ ...prev, [a]: e.target.checked }))}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      {/* +2 / +1 대상 선택 */}
+      <div style={{ minWidth:220, display:"flex", flexDirection:"column", gap:8 }}>
+        <div style={{ fontWeight:600 }}>보너스</div>
+        <label style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ width:36 }}>+2</span>
+          <select
+            value={pbBonus2 ?? ""}
+            onChange={(e)=>handleChangePb2(e.target.value)}
+            style={{...select, minWidth:140}}
+          >
+            <option value="">-</option>
+            {ABILS.map(a=><option key={a} value={a}>{abilLabel(a)}</option>)}
+          </select>
+        </label>
+        <label style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ width:36 }}>+1</span>
+          <select
+            value={pbBonus1 ?? ""}
+            onChange={(e)=>handleChangePb1(e.target.value)}
+            style={{...select, minWidth:140}}
+          >
+            <option value="">-</option>
+            {ABILS.map(a=><option key={a} value={a}>{abilLabel(a)}</option>)}
+          </select>
+        </label>
+      </div>
+    </div>
+
+  </div>
 </section>
+
 
             {/* 클래스별 특성 */}
             <section style={{ border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
